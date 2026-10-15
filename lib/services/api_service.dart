@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:maiz_app/screens/login_screen.dart';
@@ -16,9 +17,18 @@ class ApiService {
   static const String _tokenKey = 'usuario_token';
 
   // ===============================================================
-  // CONFIGURACIÓN DE CONEXIÓN
+  // CONFIGURACIÓN DE CONEXIÓNnnnnnnnnnnnnnn
   // ===============================================================
-  static Future<String> get baseUrl async => 'https://maizapp-ec.com';
+  static Future<String> get baseUrl async {
+    final appUrl = dotenv.env['APP_URL']?.trim();
+    if (appUrl != null && appUrl.isNotEmpty) return appUrl;
+
+    final apiBaseUrl = dotenv.env['API_BASE_URL']?.trim();
+    if (apiBaseUrl != null && apiBaseUrl.isNotEmpty) return apiBaseUrl;
+
+    // return 'http://192.168.0.7:8000';
+    return 'http://192.168.137.1:8000';
+  }
 
   // ===============================================================
   // AYUDAS DE TOKEN / ALMACENAMIENTO
@@ -465,27 +475,50 @@ class ApiService {
   // ===============================================================
   /// La API ya extrae el id del usuario del token JWT, por lo que
   /// no es necesario pasar `userId` desde el cliente.
-  static Future<Map<String, dynamic>?> uploadImage(
-    File image,
-  ) async {
+  static Future<Map<String, dynamic>?> _sendDiagnosisRequest(
+    File image, {
+    required String tipo,
+    int? cropId,
+    double? latitude,
+    double? longitude,
+  }) async {
     try {
       final url = Uri.parse("${await baseUrl}/api/v1/diagnose");
       final req = http.MultipartRequest("POST", url);
       req.headers.addAll(await _defaultHeaders());
-      // ya no enviamos user_id en el cuerpo
+      req.fields["tipo"] = tipo;
+      if (cropId != null) req.fields["crop_id"] = cropId.toString();
+      if (latitude != null) req.fields["latitude"] = latitude.toString();
+      if (longitude != null) req.fields["longitude"] = longitude.toString();
       req.files.add(await http.MultipartFile.fromPath("image", image.path));
+
       final res = await req.send();
       final body = await res.stream.bytesToString();
+
       if (res.statusCode == 401) {
         await _handleUnauthorized();
         return null;
       }
-      if (res.statusCode != 200) return null;
-      return jsonDecode(body)["diagnosis"];
+      if (res.statusCode != 200) {
+        return jsonDecode(body) as Map<String, dynamic>?;
+      }
+      return jsonDecode(body) as Map<String, dynamic>?;
     } catch (e) {
-      print("❌ uploadImage legacy error: $e");
+      print("❌ _sendDiagnosisRequest error: $e");
       return null;
     }
+  }
+
+  static Future<Map<String, dynamic>?> uploadImage(
+    File image, {
+    String tipo = 'enfermedad',
+  }) async {
+    final response = await _sendDiagnosisRequest(
+      image,
+      tipo: tipo,
+    );
+    if (response == null) return null;
+    return response["diagnosis"] ?? response;
   }
 
   static Future<Map<String, dynamic>?> uploadImageToCrop(
@@ -493,32 +526,34 @@ class ApiService {
     required int cropId,
     required double latitude,
     required double longitude,
+    String tipo = 'enfermedad',
   }) async {
-    try {
-      final url = Uri.parse("${await baseUrl}/api/v1/diagnose");
-      final req = http.MultipartRequest("POST", url);
-      req.headers.addAll(await _defaultHeaders());
-      req.fields["crop_id"] = cropId.toString();
-      req.fields["latitude"] = latitude.toString();
-      req.fields["longitude"] = longitude.toString();
-      req.files.add(await http.MultipartFile.fromPath("image", image.path));
-      print("📤 Enviando imagen a $url...");
-      final res = await req.send();
-      final body = await res.stream.bytesToString();
-      if (res.statusCode == 401) {
-        await _handleUnauthorized();
-        return null;
-      }
-      print("📥 Respuesta del servidor: ${res.statusCode}");
-      if (res.statusCode != 200) {
-        print("❌ Error del servidor: $body");
-        return null;
-      }
-      return jsonDecode(body)["diagnosis"];
-    } catch (e) {
-      print("❌ uploadImageToCrop error: $e");
-      return null;
-    }
+    final response = await _sendDiagnosisRequest(
+      image,
+      tipo: tipo,
+      cropId: cropId,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (response == null) return null;
+    return response["diagnosis"] ?? response;
+  }
+
+  static Future<Map<String, dynamic>?> uploadImagePlaga(
+    File image, {
+    required int cropId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final response = await _sendDiagnosisRequest(
+      image,
+      tipo: 'plaga',
+      cropId: cropId,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (response == null) return null;
+    return response["diagnosis"] ?? response;
   }
 
   // ===============================================================
@@ -559,9 +594,31 @@ class ApiService {
         return null;
       }
       if (res.statusCode == 200) {
-        final json = jsonDecode(res.body);
-        if (json["success"] == true) {
-          return (json["diagnoses"] as List).cast<Map<String, dynamic>>();
+        final decoded = jsonDecode(res.body);
+
+        if (decoded is List) {
+          return decoded
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        }
+
+        if (decoded is Map<String, dynamic>) {
+          final dynamic listData = decoded["diagnoses"] ??
+              decoded["data"] ??
+              decoded["items"] ??
+              decoded["results"];
+
+          if (listData is List) {
+            return listData
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList();
+          }
+
+          if (decoded["success"] == true && decoded["diagnosis"] is Map) {
+            return [Map<String, dynamic>.from(decoded["diagnosis"] as Map)];
+          }
         }
       }
       return null;
@@ -887,6 +944,7 @@ class ApiService {
         req.fields["latitude"] = diag["latitude"].toString();
       if (diag["longitude"] != null)
         req.fields["longitude"] = diag["longitude"].toString();
+      req.fields["tipo"] = diag["tipo"]?.toString() ?? 'enfermedad';
 
       req.files.add(await http.MultipartFile.fromPath("image", imagePath));
 

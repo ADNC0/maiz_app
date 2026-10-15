@@ -26,6 +26,103 @@ class _CropDiagnosisScreenState extends State<CropDiagnosisScreen> {
 
   static const Color primaryGreen = Color(0xFF2E7D32);
 
+  String _normalizeText(String value) {
+    var text = value.trim().toLowerCase();
+    const withDia = 'áéíóúüñ';
+    const withoutDia = 'aeiouun';
+    for (var i = 0; i < withDia.length; i++) {
+      text = text.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return text;
+  }
+
+  String _prettyDiseaseLabel(dynamic rawValue) {
+    final raw = (rawValue ?? '').toString().trim();
+    if (raw.isEmpty) return 'Desconocido';
+
+    final normalized = _normalizeText(raw.replaceAll('_', ' '));
+    if (normalized.contains('no es plaga') || normalized.contains('no plaga')) {
+      return 'No es plaga';
+    }
+    if (normalized.contains('gusano ejercito')) return 'Gusano ejercito';
+    if (normalized.contains('gusano cortador')) return 'Gusano cortador';
+    if (normalized.contains('pulgones') || normalized.contains('pulgon')) {
+      return 'Pulgones';
+    }
+    if (normalized.contains('pulgilla') || normalized.contains('chicharrita')) {
+      return 'Pulgilla';
+    }
+
+    return raw
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((w) => w.trim().isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+        .join(' ');
+  }
+
+  String _fallbackRecommendation(String diseaseName) {
+    final normalized = _normalizeText(diseaseName.replaceAll('_', ' '));
+
+    if (normalized.contains('no es plaga') || normalized.contains('no plaga')) {
+      return 'No se detecta plaga en la imagen. No apliques insecticida; revisa la planta y toma otra foto enfocada para confirmar.';
+    }
+    if (normalized.contains('pulgones') || normalized.contains('pulgon')) {
+      return 'Monitorea el enves de la hoja y aplica control suave (jabon potasico o neem) solo si aumenta la presencia de pulgones.';
+    }
+    if (normalized.contains('gusano cortador')) {
+      return 'Revisa base del tallo al atardecer y retira larvas visibles. Si el dano avanza, aplica control dirigido en la base.';
+    }
+    if (normalized.contains('gusano ejercito')) {
+      return 'Inspecciona bordes del cultivo y controla focos tempranos. Si hay alta infestacion, aplica manejo integrado de forma localizada.';
+    }
+    if (normalized.contains('pulgilla') || normalized.contains('chicharrita')) {
+      return 'Mantén monitoreo semanal y controla malezas alrededor. Actua solo si observas aumento de insectos y dano nuevo.';
+    }
+
+    return 'Mantén monitoreo del cultivo y repite la captura con buena luz para obtener una recomendación más precisa.';
+  }
+
+  bool _isNoEsPlaga(String diseaseName) {
+    final normalized = _normalizeText(diseaseName.replaceAll('_', ' '));
+    return normalized.contains('no es plaga') || normalized.contains('no plaga');
+  }
+
+  bool _isPlaceholderRecommendation(String recommendation) {
+    final normalized = _normalizeText(recommendation.replaceAll('_', ' '));
+    if (normalized.isEmpty) return true;
+
+    if (normalized == 'n/a' || normalized == 'na') return true;
+
+    if (normalized.contains('sin recomendacion')) return true;
+    if (normalized.contains('no recommendation')) return true;
+    if (normalized.contains('recomendacion no disponible')) return true;
+    if (normalized.contains('recommendation not available')) return true;
+
+    return false;
+  }
+
+  String _resolveRecommendation(Map<String, dynamic> diag) {
+    final recommendation = (diag['recommendation'] ?? '').toString().trim();
+    final disease = (diag['disease'] ?? diag['label'] ?? '').toString();
+
+    if (!_isPlaceholderRecommendation(recommendation)) {
+      return recommendation;
+    }
+
+    if (_isNoEsPlaga(disease)) {
+      return 'Sin recomendación disponible.';
+    }
+
+    return _fallbackRecommendation(disease);
+  }
+
+  String _formatConfidence(dynamic rawValue) {
+    final value = double.tryParse('$rawValue') ?? 0.0;
+    final pct = value <= 1.0 ? value * 100.0 : value;
+    return '${pct.toStringAsFixed(2)}%';
+  }
+
   Widget _fallbackImage() {
     return Container(
       alignment: Alignment.center,
@@ -54,8 +151,8 @@ class _CropDiagnosisScreenState extends State<CropDiagnosisScreen> {
           !diseaseName.contains('unknown');
     }).toList();
 
-    final localesPendientes =
-        await DBService.obtenerDiagnosticosLocalesPorParcela(widget.cropId);
+    final localesPendientes = await DBService
+      .obtenerDiagnosticosLocalesPendientesPorParcela(widget.cropId);
 
     final merged = [
       ...localesPendientes,
@@ -194,8 +291,12 @@ class _CropDiagnosisScreenState extends State<CropDiagnosisScreen> {
                           final double confValue =
                               double.tryParse('${diag['confidence']}') ?? 0.0;
                           final bool isPending = confValue == 0.0;
-                          final String label =
-                              diag['label'] ?? diag['disease'] ?? 'Desconocido';
+                            final String rawLabel =
+                              (diag['label'] ?? diag['disease'] ?? 'Desconocido')
+                                .toString();
+                            final String label = _prettyDiseaseLabel(rawLabel);
+                            final String recommendation =
+                              _resolveRecommendation(diag);
                           final localPath =
                               (diag["image_path"] ?? diag["imagePath"] ?? "")
                                   .toString();
@@ -332,8 +433,7 @@ class _CropDiagnosisScreenState extends State<CropDiagnosisScreen> {
                                             ),
                                             const SizedBox(height: 6),
                                             Text(
-                                              diag['recommendation'] ??
-                                                  'Sin recomendación',
+                                              recommendation,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                               style:
@@ -341,7 +441,7 @@ class _CropDiagnosisScreenState extends State<CropDiagnosisScreen> {
                                             ),
                                             const SizedBox(height: 8),
                                             Text(
-                                              "Confianza: ${confValue.toStringAsFixed(2)}%",
+                                              "Confianza: ${_formatConfidence(diag['confidence'])}",
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 color: Colors.green,

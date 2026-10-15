@@ -14,8 +14,6 @@ class AdminParcelsScreen extends StatefulWidget {
 class _AdminParcelsScreenState extends State<AdminParcelsScreen> {
   late Future<List<Map<String, dynamic>>?> _usersFuture;
 
-  final Map<int, Future<_UserSummary>> _summaryFutures = {};
-
   static const Color primaryGreen = Color(0xFF2E7D32);
 
   @override
@@ -24,21 +22,46 @@ class _AdminParcelsScreenState extends State<AdminParcelsScreen> {
     _usersFuture = ApiService.fetchUsers();
   }
 
-  Future<_UserSummary> _loadSummary(int userId) async {
-    final parcels = await ApiService.fetchParcels(userId);
-    final diagnoses = await ApiService.fetchDiagnoses(userId: userId);
+  Future<void> _refresh() async {
+    setState(() {
+      _usersFuture = ApiService.fetchUsers();
+    });
+  }
+
+  _UserSummary _extractSummaryFromUser(Map<String, dynamic> user) {
+    final parcelsCount = _readFirstInt(user, const [
+      'parcels_count',
+      'parcelas_count',
+      'total_parcels',
+      'parcel_count',
+      'crops_count',
+    ]);
+
+    final imagesCount = _readFirstInt(user, const [
+      'diagnoses_count',
+      'diagnosticos_count',
+      'images_count',
+      'imagenes_count',
+      'total_diagnoses',
+      'total_images',
+    ]);
 
     return _UserSummary(
-      parcelsCount: parcels?.length ?? 0,
-      imagesCount: diagnoses?.length ?? 0,
+      parcelsCount: parcelsCount,
+      imagesCount: imagesCount,
     );
   }
 
-  Future<void> _refresh() async {
-    setState(() {
-      _summaryFutures.clear();
-      _usersFuture = ApiService.fetchUsers();
-    });
+  int? _readFirstInt(Map<String, dynamic> source, List<String> keys) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value == null) continue;
+      if (value is int) return value;
+      if (value is double) return value.round();
+      final parsed = int.tryParse('$value');
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 
   @override
@@ -115,90 +138,84 @@ class _AdminParcelsScreenState extends State<AdminParcelsScreen> {
                   return _userCardError();
                 }
 
-                _summaryFutures[userId] ??= _loadSummary(userId);
+                final summary = _extractSummaryFromUser(u);
 
-                return FutureBuilder<_UserSummary>(
-                  future: _summaryFutures[userId],
-                  builder: (context, sumSnap) {
-                    final parcelsCount = sumSnap.data?.parcelsCount ?? 0;
-                    final imagesCount = sumSnap.data?.imagesCount ?? 0;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: _glassCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _glassCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                email,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 14),
+                          Row(
                             children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: _miniStat(
+                                  icon: Icons.map_outlined,
+                                  label: "Parcelas",
+                                  value: summary.parcelsCount?.toString() ??
+                                      "N/D",
                                 ),
                               ),
-                              if (email.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    email,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _miniStat(
-                                      icon: Icons.map_outlined,
-                                      label: "Parcelas",
-                                      value: parcelsCount.toString(),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _miniStat(
-                                      icon: Icons.image_outlined,
-                                      label: "Imágenes",
-                                      value: imagesCount.toString(),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryGreen,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AdminUserDetailScreen(
-                                          userId: userId,
-                                          userName: name,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text("Ver detalles"),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _miniStat(
+                                  icon: Icons.image_outlined,
+                                  label: "Imágenes",
+                                  value:
+                                      summary.imagesCount?.toString() ?? "N/D",
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AdminUserDetailScreen(
+                                      userId: userId,
+                                      userName: name,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text("Ver detalles"),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 );
               }),
             ],
@@ -275,8 +292,8 @@ class _AdminParcelsScreenState extends State<AdminParcelsScreen> {
 }
 
 class _UserSummary {
-  final int parcelsCount;
-  final int imagesCount;
+  final int? parcelsCount;
+  final int? imagesCount;
 
   _UserSummary({
     required this.parcelsCount,

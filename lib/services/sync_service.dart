@@ -13,8 +13,8 @@ class SyncService {
   static void startSyncListener() {
     Connectivity()
         .onConnectivityChanged
-        .listen((ConnectivityResult result) async {
-      if (result != ConnectivityResult.none) {
+        .listen((List<ConnectivityResult> results) async {
+      if (results.any((result) => result != ConnectivityResult.none)) {
         print("🔌 Conexión detectada — iniciando sincronización offline...");
         await syncOfflineData();
       }
@@ -68,6 +68,13 @@ class SyncService {
   // DIAGNÓSTICOS OFFLINE
   // ===============================================================
   static Future<void> syncPendingDiagnoses() async {
+    final token = await ApiService.getToken();
+    if (token == null || token.isEmpty) {
+      print(
+          "⚠️ No hay token activo; se pospone sincronización de diagnósticos.");
+      return;
+    }
+
     final pending = await DBService.getPendingDiagnoses();
     if (pending.isEmpty) return;
 
@@ -89,6 +96,7 @@ class SyncService {
       final int? cropId = diag['crop_id'];
       final double? latitude = diag['lat'] ?? diag['latitude'];
       final double? longitude = diag['lng'] ?? diag['longitude'];
+      final String tipo = diag['tipo']?.toString() ?? 'enfermedad';
 
       if (!File(imagePath).existsSync()) {
         print("⚠️ Archivo offline no encontrado: $imagePath");
@@ -102,6 +110,7 @@ class SyncService {
         "crop_id": cropId,
         "latitude": latitude,
         "longitude": longitude,
+        "tipo": tipo,
         "image_path": imagePath,
       };
 
@@ -118,8 +127,13 @@ class SyncService {
             : int.tryParse('${diag['id']}');
 
         if (localId != null) {
-          // Borrado inmediato del pendiente para evitar re-envío en refrescos.
-          await DBService.deletePendingDiagnosisById(localId);
+          final payload = (res?["diagnosis"] is Map<String, dynamic>)
+              ? Map<String, dynamic>.from(res!["diagnosis"] as Map)
+              : Map<String, dynamic>.from(
+                  (res ?? const <String, dynamic>{}).cast<String, dynamic>());
+
+          // Guarda el resultado real devuelto por AWS y marca uploaded=1.
+          await DBService.actualizarDiagnosticoSincronizado(localId, payload);
         }
       } else {
         print("❌ Error al sincronizar diagnóstico offline: $res");

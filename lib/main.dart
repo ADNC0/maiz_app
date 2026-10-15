@@ -26,7 +26,7 @@ void main() async {
   await DBService.database;
 
   final connectivity = await Connectivity().checkConnectivity();
-  if (connectivity != ConnectivityResult.none) {
+  if (connectivity.any((result) => result != ConnectivityResult.none)) {
     await SyncService.syncOfflineData();
   }
 

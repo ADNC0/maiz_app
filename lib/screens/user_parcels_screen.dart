@@ -74,6 +74,50 @@ class CornDiseaseLibrary {
       return _getCercosporaData();
     }
 
+    // CASO 6: NO ES PLAGA
+    if (cleanName.contains("no_es_plaga") ||
+        cleanName.contains("no_plaga") ||
+        cleanName.contains("sin plaga") ||
+        cleanName.contains("no pest") ||
+        cleanName.contains("not_pest") ||
+        cleanName.contains("no_plague") ||
+        cleanName.contains("no es plaga")) {
+      return _getNoEsPlagaData();
+    }
+
+    // CASO 7: GUSANO CORTADOR
+    if (cleanName.contains("gusano cortador") ||
+        cleanName.contains("cortador amarillo") ||
+        cleanName.contains("cortador") ||
+        cleanName.contains("cutworm")) {
+      return _getGusanoCortadorData();
+    }
+
+    // CASO 8: GUSANO EJÉRCITO
+    if (cleanName.contains("gusano ejercito") ||
+        cleanName.contains("gusano_ejercito") ||
+        cleanName.contains("armyworm") ||
+        cleanName.contains("ejercito")) {
+      return _getGusanoEjercitoData();
+    }
+
+    // CASO 9: PULGONES
+    if (cleanName.contains("pulgon") ||
+        cleanName.contains("pulgones") ||
+        cleanName.contains("aphid") ||
+        cleanName.contains("aphids")) {
+      return _getPulgonesData();
+    }
+
+    // CASO 10: PULGUILLA / CHICHARRITA
+    if (cleanName.contains("pulgilla") ||
+        cleanName.contains("leafhopper") ||
+        cleanName.contains("chicharrita") ||
+        cleanName.contains("cicadella") ||
+        cleanName.contains("froghopper")) {
+      return _getPulgillaData();
+    }
+
     // ---------------------------------------------------------
     //    BLOQUE 2: OTROS DIAGNÓSTICOS (Por si la API crece)
     // ---------------------------------------------------------
@@ -200,6 +244,85 @@ class CornDiseaseLibrary {
     };
   }
 
+  static Map<String, dynamic> _getNoEsPlagaData() {
+    return {
+      "title": "NO ES PLAGA",
+      "is_healthy": false,
+      "severity": "NO APLICA",
+      "description":
+          "La imagen no muestra una plaga clara. Puede ser un daño por condiciones de cultivo o la foto no corresponde a un insecto.",
+      "chemical": "No apliques insecticidas si no hay una plaga confirmada.",
+      "organic":
+          "Revisa la planta completa y la foto. Busca si hay falta de agua, nutrientes o daño físico en la hoja.",
+      "prevention":
+          "Antes de actuar, toma una foto bien enfocada y confirma si el problema es plaga o estrés de la planta."
+    };
+  }
+
+  static Map<String, dynamic> _getGusanoCortadorData() {
+    return {
+      "title": "GUSANO CORTADOR",
+      "is_healthy": false,
+      "severity": "ALTA",
+      "description":
+          "La planta aparece cortada o mordida en la base del tallo y las hojas jóvenes están a ras de suelo. Este gusano ataca por la noche y deja la planta tumbada.",
+      "chemical":
+          "Aplica un insecticida con Cipermetrina o Lambda-cihalotrina en la base de las plantas. Hazlo temprano en la mañana o al atardecer.",
+      "organic":
+          "Coloca cebos con harina y melaza cerca de las plantas afectadas. Recoge las plantas cortadas y usa Bacillus thuringiensis en la base.",
+      "prevention":
+          "Mantén limpia la parcela, elimina maleza y rastrojo. Siembra con buena separación para reducir refugios y revisa temprano por la mañana."
+    };
+  }
+
+  static Map<String, dynamic> _getGusanoEjercitoData() {
+    return {
+      "title": "GUSANO EJÉRCITO",
+      "is_healthy": false,
+      "severity": "ALTA",
+      "description":
+          "Las hojas aparecen comidas en grupos, con bordes irregulares y la planta como mordida. Se suelen mover varias orugas juntas en la hoja.",
+      "chemical":
+          "Aplica un plaguicida a base de Bacillus thuringiensis o un piretroide suave cuando haya pocas orugas visibles.",
+      "organic":
+          "Rocía con Bacillus thuringiensis o una mezcla de ajo y chile. También puedes recoger manualmente los grupos de gusanos.",
+      "prevention":
+          "No dejes maleza alta cerca del cultivo. Revisa los bordes y rota cultivos para que no se instalen grandes grupos."
+    };
+  }
+
+  static Map<String, dynamic> _getPulgonesData() {
+    return {
+      "title": "PULGONES",
+      "is_healthy": false,
+      "severity": "MEDIA",
+      "description":
+          "Las hojas se rizan, aparecen puntitos y pueden gotear una savia pegajosa. Es común ver pequeñas colonias verdes o negras en el envés de la hoja.",
+      "chemical":
+          "Usa un insecticida sistémico como Imidacloprid o un piretroide suave aplicado en la mañana.",
+      "organic":
+          "Aplica agua jabonosa, aceite de neem o extracto de ajo. Si puedes, introduce mariquitas o insectos benéficos.",
+      "prevention":
+          "Controla malezas hospedantes y evita exceso de nitrógeno. Revisa plantas nuevas regularmente."
+    };
+  }
+
+  static Map<String, dynamic> _getPulgillaData() {
+    return {
+      "title": "PULGUILLA / CHICHARRITA",
+      "is_healthy": false,
+      "severity": "MEDIA",
+      "description":
+          "Se observan punteados amarillos y hojas con brillo. Las pulgillas chupan savia y pueden transmitir virus entre plantas.",
+      "chemical":
+          "Aplica un insecticida sistémico o piretroide, como Imidacloprid o Cipermetrina, en la mañana.",
+      "organic":
+          "Rocía con agua jabonosa y aceite de neem. Coloca trampas amarillas y controla las malezas donde se refugian.",
+      "prevention":
+          "No fertilices en exceso con nitrógeno. Mantén los bordes limpios y revisa las plantas temprano."
+    };
+  }
+
   static Map<String, dynamic> _getMosaicoData() {
     return {
       "title": "MOSAICO (Virus o Rayado)",
@@ -284,8 +407,13 @@ class CornDiseaseLibrary {
 // ==========================================
 class UserParcelsScreen extends StatefulWidget {
   final int userId;
+  final VoidCallback? onDiagnosisSaved;
 
-  const UserParcelsScreen({super.key, required this.userId});
+  const UserParcelsScreen({
+    super.key,
+    required this.userId,
+    this.onDiagnosisSaved,
+  });
 
   @override
   State<UserParcelsScreen> createState() => _UserParcelsScreenState();
@@ -305,8 +433,9 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
   final Set<int> _trashedParcelIds = <int>{};
   bool isLoading = true;
   bool _wasOnline = false;
+  String _selectedDiagnosisType = 'enfermedad';
   final Connectivity _connectivity = Connectivity();
-  StreamSubscription<ConnectivityResult>? _connectSub;
+  StreamSubscription<List<ConnectivityResult>>? _connectSub;
 
   String get _trashPrefsKey => 'trashed_parcel_ids_user_${widget.userId}';
 
@@ -321,11 +450,11 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
         vsync: this, duration: const Duration(milliseconds: 800));
 
     _connectivity.checkConnectivity().then((status) {
-      _wasOnline = status != ConnectivityResult.none;
+      _wasOnline = status.any((result) => result != ConnectivityResult.none);
     });
 
     _connectSub = _connectivity.onConnectivityChanged.listen((status) {
-      final isOnline = status != ConnectivityResult.none;
+      final isOnline = status.any((result) => result != ConnectivityResult.none);
       if (isOnline && !_wasOnline) {
         _autoSyncData();
       }
@@ -777,45 +906,102 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
   Future<void> _mostrarGuiaDiagnostico(int cropId, String cropName) async {
     final proceed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text("Antes de tomar la foto"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            _GuiaItem(
-                icon: Icons.wb_sunny_outlined,
-                text:
-                    "Usa luz natural, evita sombras fuertes y no tomes la foto de noche."),
-            SizedBox(height: 8),
-            _GuiaItem(
-                icon: Icons.flash_off,
-                text: "No uses flash: genera brillos que confunden al modelo."),
-            SizedBox(height: 8),
-            _GuiaItem(
-                icon: Icons.photo_size_select_large,
-                text:
-                    "Acerca la cámara a 15-25 cm y enfoca la zona afectada completa."),
-            SizedBox(height: 8),
-            _GuiaItem(
-                icon: Icons.blur_on,
-                text:
-                    "Mantén la mano firme y la hoja limpia (sin polvo ni gotas)."),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Entendido"),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        String localSelectedType = _selectedDiagnosisType;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              scrollable: true,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
+              title: const Text("Antes de tomar la foto"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _GuiaItem(
+                        icon: Icons.wb_sunny_outlined,
+                        text:
+                            "Usa luz natural, evita sombras fuertes y no tomes la foto de noche."),
+                    const SizedBox(height: 8),
+                    const _GuiaItem(
+                        icon: Icons.flash_off,
+                        text:
+                            "No uses flash: genera brillos que confunden al modelo."),
+                    const SizedBox(height: 8),
+                    const _GuiaItem(
+                        icon: Icons.photo_size_select_large,
+                        text:
+                            "Acerca la cámara a 15-25 cm y enfoca la zona afectada completa."),
+                    const SizedBox(height: 8),
+                    const _GuiaItem(
+                        icon: Icons.blur_on,
+                        text:
+                            "Mantén la mano firme y la hoja limpia (sin polvo ni gotas)."),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Tipo de diagnóstico',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Enfermedad'),
+                          selected: localSelectedType == 'enfermedad',
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                localSelectedType = 'enfermedad';
+                              });
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Plaga'),
+                          selected: localSelectedType == 'plaga',
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                localSelectedType = 'plaga';
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text("Cancelar",
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      minimumSize: const Size(110, 44)),
+                  onPressed: () {
+                    _selectedDiagnosisType = localSelectedType;
+                    Navigator.pop(ctx, true);
+                  },
+                  child: const Text("Entendido"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     if (proceed == true) {
@@ -837,16 +1023,29 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
         ? await picker.pickImage(
             source: ImageSource.camera,
             preferredCameraDevice: CameraDevice.rear,
-            imageQuality: 85,
+            imageQuality: 80,
+            maxWidth: 1600,
+            maxHeight: 1600,
           )
         : await picker.pickImage(
             source: ImageSource.gallery,
             imageQuality: 85,
+            maxWidth: 2048,
+            maxHeight: 2048,
           );
 
     if (photo == null) return; // Usuario canceló
 
     File imageFile = File(photo.path);
+    if (!await imageFile.exists() || await imageFile.length() == 0) {
+      if (mounted) {
+        _mostrarAlertaAmigable(
+          "Error",
+          "La foto no se guardó correctamente. Intenta de nuevo.",
+        );
+      }
+      return;
+    }
 
     // 3. Proceso de Envío
     if (!mounted) return;
@@ -855,6 +1054,7 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
     try {
       Map<String, dynamic>? result;
       bool isSuccess = false;
+      String failureMessage = "No se pudo procesar la imagen.";
 
       // Check de salud del backend
       bool isBackendOnline = false;
@@ -871,9 +1071,15 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
           cropId: cropId,
           latitude: position.latitude,
           longitude: position.longitude,
+          tipo: _selectedDiagnosisType,
         );
 
-        if (response != null && response is Map<String, dynamic>) {
+        final hasDiagnosis = response != null &&
+            (response["disease_name"] != null ||
+                response["disease"] != null ||
+                response["class_name"] != null);
+
+        if (hasDiagnosis) {
           isSuccess = true;
 
           // =====================================================================
@@ -901,17 +1107,28 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
             "is_healthy": expertAdvice["is_healthy"],
             "severity": expertAdvice["severity"],
           };
+        } else {
+          final backendMessage = response is Map<String, dynamic>
+              ? (response["message"] ?? response["error"])
+              : null;
+          if (backendMessage != null &&
+              backendMessage.toString().trim().isNotEmpty) {
+            failureMessage = backendMessage.toString();
+          }
         }
       } else {
+        final offlineImage = await _persistOfflineDiagnosisImage(imageFile);
+
         // MODO OFFLINE
         await DBService.saveDiagnosis(
-          imagePath: imageFile.path,
+          imagePath: offlineImage.path,
           userId: widget.userId,
           cropId: cropId,
           disease: "Pendiente de Análisis",
           recommendation: "Sin internet. Sincroniza más tarde.",
           confidence: 0.0,
           isCornLeaf: true,
+          tipo: _selectedDiagnosisType,
           latitude: position.latitude,
           longitude: position.longitude,
           createdAt: DateTime.now().toIso8601String(),
@@ -935,6 +1152,7 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
       if (!mounted) return;
 
       if (isSuccess && fueOffline) {
+        widget.onDiagnosisSaved?.call();
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -948,6 +1166,7 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
       }
 
       if (isSuccess && result != null) {
+        widget.onDiagnosisSaved?.call();
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -961,13 +1180,25 @@ class _UserParcelsScreenState extends State<UserParcelsScreen>
           _loadParcelsData();
         });
       } else {
-        if (mounted)
-          _mostrarAlertaAmigable("Error", "No se pudo procesar la imagen.");
+        if (mounted) _mostrarAlertaAmigable("Error", failureMessage);
       }
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       debugPrint("Error Diagnostico: $e");
       _mostrarAlertaAmigable("Excepción", "Ocurrió un error inesperado: $e");
+    }
+  }
+
+  Future<File> _persistOfflineDiagnosisImage(File source) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName =
+          "offline_diag_${DateTime.now().millisecondsSinceEpoch}_${source.path.split(RegExp(r'[\\/]')).last}";
+      final target = File("${dir.path}/$fileName");
+      return await source.copy(target.path);
+    } catch (_) {
+      // Fallback seguro: si no se puede copiar, se usa la ruta original.
+      return source;
     }
   }
 

@@ -13,6 +13,8 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
   late Future<_DiseaseSummary> _future;
 
   static const Color primaryGreen = Color(0xFF2E7D32);
+  static const Duration requestTimeout = Duration(seconds: 7);
+  static const Duration retryDelay = Duration(milliseconds: 400);
 
   @override
   void initState() {
@@ -21,24 +23,31 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
   }
 
   Future<_DiseaseSummary> _loadSummary() async {
-    final users = await ApiService.fetchUsers() ?? [];
-    final Map<String, int> counts = {};
-    int totalImages = 0;
+    final results = await Future.wait([
+      _fetchWithOneRetry(() => ApiService.fetchAdminStatsOverview()),
+      _fetchWithOneRetry(() => ApiService.fetchAdminStatsDiseases()),
+    ]);
 
-    for (final u in users) {
-      final int userId =
-          (u['id'] is int) ? u['id'] : int.tryParse("${u['id']}") ?? 0;
-      if (userId == 0) continue;
+    final overviewPayload = results[0];
+    final diseasesPayload = results[1];
 
-      final diags = await ApiService.fetchDiagnoses(userId: userId) ?? [];
-      totalImages += diags.length;
+    final counts = <String, int>{};
+    final diseaseRows = diseasesPayload != null
+        ? _extractListPayload(diseasesPayload)
+        : <Map<String, dynamic>>[];
 
-      for (final d in diags) {
-        final label =
-            "${d['label'] ?? d['disease'] ?? d['prediction'] ?? d['class'] ?? d['result'] ?? 'Sin etiqueta'}";
-        counts[label] = (counts[label] ?? 0) + 1;
-      }
+    for (final row in diseaseRows) {
+      final label = _extractLabel(row);
+      if (label.isEmpty) continue;
+      counts[label] = (counts[label] ?? 0) + _toInt(row['count']);
     }
+
+    final overviewData = _extractOverviewPayload(overviewPayload ?? const {});
+    final totalFromOverview = _toInt(
+      overviewData['diagnoses'] ?? overviewData['total_diagnoses'],
+    );
+    final totalFromCounts = counts.values.fold(0, (sum, value) => sum + value);
+    final totalImages = totalFromOverview > 0 ? totalFromOverview : totalFromCounts;
 
     final entries = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -47,6 +56,50 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
       totalImages: totalImages,
       entries: entries,
     );
+  }
+
+  Future<Map<String, dynamic>?> _fetchWithOneRetry(
+    Future<Map<String, dynamic>?> Function() request,
+  ) async {
+    try {
+      return await request().timeout(requestTimeout);
+    } catch (_) {
+      await Future.delayed(retryDelay);
+      return await request().timeout(requestTimeout);
+    }
+  }
+
+  List<Map<String, dynamic>> _extractListPayload(Map<String, dynamic> payload) {
+    final dynamic listData =
+        payload['data'] ?? payload['items'] ?? payload['stats'] ?? payload['diseases'];
+    if (listData is List) {
+      return listData
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Map<String, dynamic> _extractOverviewPayload(Map<String, dynamic> payload) {
+    final dynamic data =
+        payload['totals'] ?? payload['overview'] ?? payload['data'] ?? payload;
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return <String, dynamic>{};
+  }
+
+  String _extractLabel(Map<String, dynamic> row) {
+    final raw =
+        (row['disease'] ?? row['label'] ?? row['class'] ?? '').toString();
+    return raw.trim();
+  }
+
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is double) return value.round();
+    return int.tryParse('$value') ?? 0;
   }
 
   Future<void> _refresh() async {

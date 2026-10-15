@@ -13,7 +13,7 @@ class DBService {
 
     _db = await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         // ---------- USERS ----------
         await db.execute('''
@@ -53,6 +53,7 @@ class DBService {
             is_corn_leaf INTEGER,
             latitude REAL,
             longitude REAL,
+            tipo TEXT DEFAULT 'enfermedad',
             created_at TEXT,
             uploaded INTEGER DEFAULT 0
           )
@@ -87,6 +88,12 @@ class DBService {
           try {
             await db.execute(
                 "ALTER TABLE diagnoses ADD COLUMN server_image_path TEXT");
+          } catch (_) {}
+        }
+        if (oldVersion < 5) {
+          try {
+            await db.execute(
+                "ALTER TABLE diagnoses ADD COLUMN tipo TEXT DEFAULT 'enfermedad'");
           } catch (_) {}
         }
       },
@@ -199,6 +206,7 @@ class DBService {
     required String recommendation,
     required double confidence,
     required bool isCornLeaf,
+    String tipo = 'enfermedad',
     double latitude = 0.0,
     double longitude = 0.0,
     required String createdAt,
@@ -216,6 +224,7 @@ class DBService {
       'is_corn_leaf': isCornLeaf ? 1 : 0,
       'latitude': latitude,
       'longitude': longitude,
+      'tipo': tipo,
       'created_at': createdAt,
       'uploaded': uploaded,
     });
@@ -271,6 +280,7 @@ class DBService {
                   : 0,
           'latitude': item['latitude'] ?? item['lat'] ?? 0.0,
           'longitude': item['longitude'] ?? item['lng'] ?? 0.0,
+          'tipo': item['tipo'] ?? item['type'] ?? 'enfermedad',
           'created_at': item['created_at'] ?? DateTime.now().toIso8601String(),
           'uploaded': 1,
         });
@@ -299,6 +309,20 @@ class DBService {
       JOIN users u ON d.user_id = u.id
       ORDER BY d.created_at DESC
     ''');
+  }
+
+  static Future<int> countDiagnosesByUser(int userId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM diagnoses WHERE user_id = ?',
+      [userId],
+    );
+
+    if (result.isEmpty) return 0;
+    final raw = result.first['total'];
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    return int.tryParse('$raw') ?? 0;
   }
 
   static Future<List<Map<String, dynamic>>> getDiagnosesByCrop(
@@ -447,6 +471,17 @@ class DBService {
     return await db.query(
       'diagnoses',
       where: 'crop_id = ?',
+      whereArgs: [cropId],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  static Future<List<Map<String, dynamic>>>
+      obtenerDiagnosticosLocalesPendientesPorParcela(int cropId) async {
+    final db = await database;
+    return await db.query(
+      'diagnoses',
+      where: 'crop_id = ? AND uploaded = 0',
       whereArgs: [cropId],
       orderBy: 'created_at DESC',
     );

@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ========================================================
-  // 🌽 LÓGICA DE LOGIN ESTRICTA Y SEGURA
+  //  LÓGICA DE LOGIN ESTRICTA Y SEGURA
   // ========================================================
   Future<void> _login() async {
     final email = emailController.text.trim();
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // ---------------------------------------------------------
     // 2. INTENTO ONLINE (Si hay internet)
     // ---------------------------------------------------------
-    if (connectivity != ConnectivityResult.none) {
+    if (connectivity.any((result) => result != ConnectivityResult.none)) {
       try {
         // Llamamos al backend
         final response = await ApiService.login(email, password);

@@ -1,12 +1,94 @@
+import 'dart:typed_data';
 import 'dart:ui';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:maiz_app/services/api_service.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 // =========================================================
-// 🧠 CEREBRO AGRONÓMICO: EL COMPADRE EXPERTO 🧠
+//  CEREBRO AGRONÓMICO: EL COMPADRE EXPERTO 
 // (Tu librería integrada aquí mismo)
 // =========================================================
 class CornDiseaseLibrary {
+
+  static String getScientificName(String rawDiseaseName) {
+    final cleanName = _normalizeText(rawDiseaseName);
+
+    if (cleanName.contains("roya") ||
+        cleanName.contains("rust") ||
+        cleanName.contains("puccinia")) {
+      return "Puccinia sorghi";
+    }
+
+    if (cleanName.contains("tizon") ||
+        cleanName.contains("blight") ||
+        cleanName.contains("helminthosporium")) {
+      return "Exserohilum turcicum";
+    }
+
+    if (cleanName.contains("mancha_gris") ||
+        cleanName.contains("cercospora") ||
+        cleanName.contains("grey_leaf_spot")) {
+      return "Cercospora zeae-maydis";
+    }
+
+    if (cleanName.contains("gusano cortador") ||
+        cleanName.contains("cortador amarillo") ||
+        cleanName.contains("cortador") ||
+        cleanName.contains("cutworm")) {
+      return "Agrotis ipsilon";
+    }
+
+    if (cleanName.contains("gusano ejercito") ||
+        cleanName.contains("gusano_ejercito") ||
+        cleanName.contains("armyworm") ||
+        cleanName.contains("ejercito")) {
+      return "Spodoptera frugiperda";
+    }
+
+    if (cleanName.contains("pulgon") ||
+        cleanName.contains("pulgones") ||
+        cleanName.contains("aphid") ||
+        cleanName.contains("aphids")) {
+      return "Rhopalosiphum maidis";
+    }
+
+    if (cleanName.contains("pulgilla") ||
+        cleanName.contains("leafhopper") ||
+        cleanName.contains("chicharrita") ||
+        cleanName.contains("cicadella") ||
+        cleanName.contains("froghopper")) {
+      return "Dalbulus maidis";
+    }
+
+    if (cleanName.contains("mosaico") ||
+        cleanName.contains("virus") ||
+        cleanName.contains("streak")) {
+      return "Sugarcane mosaic virus (SCMV)";
+    }
+
+    if (cleanName.contains("carbon") ||
+        cleanName.contains("smut") ||
+        cleanName.contains("ustilago")) {
+      return "Ustilago maydis";
+    }
+
+    if (cleanName.contains("asfalto") || cleanName.contains("tar_spot")) {
+      return "Phyllachora maydis";
+    }
+
+    if (cleanName.contains("hoja_sana") ||
+        cleanName.contains("healthy") ||
+        cleanName.contains("saludable")) {
+      return "Zea mays (tejido sano)";
+    }
+
+    return "No disponible";
+  }
 
   // Esta función es la que decide qué consejo darte
   static Map<String, dynamic> getDetailedDiagnosis(String rawDiseaseName) {
@@ -55,6 +137,50 @@ class CornDiseaseLibrary {
         cleanName.contains("cercospora") || 
         cleanName.contains("grey_leaf_spot")) {
       return _getCercosporaData();
+    }
+
+    // CASO 6: NO ES PLAGA
+    if (cleanName.contains("no_es_plaga") ||
+      cleanName.contains("no_plaga") ||
+        cleanName.contains("sin plaga") ||
+        cleanName.contains("no pest") ||
+        cleanName.contains("not_pest") ||
+        cleanName.contains("no_plague") ||
+        cleanName.contains("no es plaga")) {
+      return _getNoEsPlagaData();
+    }
+
+    // CASO 7: GUSANO CORTADOR
+    if (cleanName.contains("gusano cortador") ||
+        cleanName.contains("cortador amarillo") ||
+        cleanName.contains("cortador") ||
+        cleanName.contains("cutworm")) {
+      return _getGusanoCortadorData();
+    }
+
+    // CASO 8: GUSANO EJÉRCITO
+    if (cleanName.contains("gusano ejercito") ||
+        cleanName.contains("gusano_ejercito") ||
+        cleanName.contains("armyworm") ||
+        cleanName.contains("ejercito")) {
+      return _getGusanoEjercitoData();
+    }
+
+    // CASO 9: PULGONES
+    if (cleanName.contains("pulgon") ||
+        cleanName.contains("pulgones") ||
+        cleanName.contains("aphid") ||
+        cleanName.contains("aphids")) {
+      return _getPulgonesData();
+    }
+
+    // CASO 10: PULGUILLA / CHICHARRITA
+    if (cleanName.contains("pulgilla") ||
+        cleanName.contains("leafhopper") ||
+        cleanName.contains("chicharrita") ||
+        cleanName.contains("cicadella") ||
+        cleanName.contains("froghopper")) {
+      return _getPulgillaData();
     }
 
     // ---------------------------------------------------------
@@ -159,6 +285,66 @@ class CornDiseaseLibrary {
     };
   }
 
+  static Map<String, dynamic> _getNoEsPlagaData() {
+    return {
+      "title": "NO ES PLAGA",
+      "is_healthy": false,
+      "severity": "NO APLICA",
+      "description": "La imagen no muestra una plaga clara. Puede ser un daño por condiciones de cultivo o la foto no corresponde a un insecto.",
+      "chemical": "No apliques insecticidas si no hay una plaga confirmada.",
+      "organic": "Revisa la planta completa y la foto. Busca si hay falta de agua, nutrientes o físico en la hoja.",
+      "prevention": "Antes de actuar, toma una foto bien enfocada y confirma si el problema es plaga o estrés de la planta."
+    };
+  }
+
+  static Map<String, dynamic> _getGusanoCortadorData() {
+    return {
+      "title": "GUSANO CORTADOR",
+      "is_healthy": false,
+      "severity": "ALTA",
+      "description": "La planta aparece cortada o mordida en la base del tallo y las hojas jóvenes están a ras de suelo. Este gusano ataca por la noche y deja la planta tumbada.",
+      "chemical": "Aplica un insecticida con Cipermetrina o Lambda-cihalotrina en la base de las plantas. Hazlo en la mañana o la tarde cuando los gusanos están activos.",
+      "organic": "Coloca cebos con harina y melaza cerca de las plantas afectadas. Recoge las plantas cortadas y usa Bacillus thuringiensis en la base.",
+      "prevention": "Mantén limpia la parcela, elimina maleza y rastrojo. Siembra con buena separación para reducir refugios y revisa temprano por la mañana."
+    };
+  }
+
+  static Map<String, dynamic> _getGusanoEjercitoData() {
+    return {
+      "title": "GUSANO EJÉRCITO",
+      "is_healthy": false,
+      "severity": "ALTA",
+      "description": "Las hojas aparecen comidas en grupos, con bordes irregulares y la planta como mordida. Se suelen mover varias orugas juntas en la hoja.",
+      "chemical": "Aplica un plaguicida a base de Bacillus thuringiensis o un piretroide suave cuando haya pocas orugas visibles.",
+      "organic": "Rocía con Bacillus thuringiensis o una mezcla de ajo y chile. También puedes recoger manualmente los grupos de gusanos.",
+      "prevention": "No dejes maleza alta cerca del cultivo. Revisa los bordes y rota cultivos para que no se instalen grandes grupos."
+    };
+  }
+
+  static Map<String, dynamic> _getPulgonesData() {
+    return {
+      "title": "PULGONES",
+      "is_healthy": false,
+      "severity": "MEDIA",
+      "description": "Las hojas se rizan, aparecen puntitos y pueden gotear una savia pegajosa. Es común ver pequeñas colonias verdes o negras en el envés de la hoja.",
+      "chemical": "Usa un insecticida sistémico como Imidacloprid o un piretroide suave aplicado en la mañana.",
+      "organic": "Aplica agua jabonosa, aceite de neem o extracto de ajo. Si puedes, introduce mariquitas o insectos benéficos.",
+      "prevention": "Controla malezas hospedantes y evita exceso de nitrógeno. Revisa plantas nuevas regularmente."
+    };
+  }
+
+  static Map<String, dynamic> _getPulgillaData() {
+    return {
+      "title": "PULGUILLA / CHICHARRITA",
+      "is_healthy": false,
+      "severity": "MEDIA",
+      "description": "Se observan punteados amarillos y hojas con brillo. Las pulgillas chupan savia y pueden transmitir virus entre plantas.",
+      "chemical": "Aplica un insecticida sistémico o piretroide, como Imidacloprid o Cipermetrina, en la mañana.",
+      "organic": "Rocía con agua jabonosa y aceite de neem. Coloca trampas amarillas y controla las malezas donde se refugian.",
+      "prevention": "No fertilices en exceso con nitrógeno. Mantén los bordes limpios y revisa las plantas temprano."
+    };
+  }
+
   static Map<String, dynamic> _getMosaicoData() {
     return {
       "title": "MOSAICO (Virus o Rayado)",
@@ -232,10 +418,356 @@ class DiagnosisDetailScreen extends StatelessWidget {
 
   static const Color primaryGreen = Color(0xFF2E7D32);
 
+  String _resolveDiagnosisImagePath() {
+    final serverImagePath =
+        "${diag['server_image_path'] ?? diag['serverImagePath'] ?? ''}".trim();
+    if (serverImagePath.isNotEmpty) return serverImagePath;
+    return "${diag['image_path'] ?? diag['imagePath'] ?? ''}".trim();
+  }
+
+  Future<pw.ImageProvider?> _loadDiagnosisPdfImage() async {
+    final localPath = "${diag['image_path'] ?? diag['imagePath'] ?? ''}".trim();
+
+    // Prioriza archivo local para que el PDF funcione incluso sin red.
+    if (localPath.isNotEmpty && !localPath.startsWith('http')) {
+      try {
+        final file = File(localPath);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          if (bytes.isNotEmpty) return pw.MemoryImage(bytes);
+        }
+      } catch (_) {}
+    }
+
+    final imagePath = _resolveDiagnosisImagePath();
+    if (imagePath.isEmpty) return null;
+
+    try {
+      final base = await ApiService.baseUrl;
+      final imageUrl = imagePath.startsWith('http')
+          ? imagePath
+          : "$base/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}";
+      return await networkImage(imageUrl);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Uint8List> _buildDiagnosisPdfBytes() async {
+    final rawDisease = "${diag['disease'] ?? ''}";
+    final expertInfo = CornDiseaseLibrary.getDetailedDiagnosis(rawDisease);
+    final scientificName = CornDiseaseLibrary.getScientificName(rawDisease);
+    final userName = "${diag['user_name'] ?? 'Usuario desconocido'}";
+    final created = _formatDate("${diag['created_at'] ?? '-'}");
+    final confidence = (diag['confidence'] as num?)?.toDouble() ?? 0.0;
+    final tipo = "${diag['tipo'] ?? 'enfermedad'}";
+
+    final pdf = pw.Document();
+    final confidencePct = ((confidence <= 1 ? confidence * 100 : confidence))
+        .toStringAsFixed(1);
+    final diagnosisImage = await _loadDiagnosisPdfImage();
+    final severity = "${expertInfo['severity'] ?? 'No disponible'}";
+
+    PdfColor _severityColor(String value) {
+      final normalized = value.toLowerCase();
+      if (normalized.contains('critica')) return PdfColors.red900;
+      if (normalized.contains('muy alta')) return PdfColors.red700;
+      if (normalized.contains('alta')) return PdfColors.red500;
+      if (normalized.contains('media')) return PdfColors.orange700;
+      if (normalized.contains('ninguna') || normalized.contains('no aplica')) {
+        return PdfColors.green700;
+      }
+      return PdfColors.blueGrey700;
+    }
+
+    pw.Widget _sectionHeader(String title) {
+      return pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.green100,
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+        ),
+        child: pw.Text(
+          title,
+          style: pw.TextStyle(
+            fontSize: 12,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.green900,
+          ),
+        ),
+      );
+    }
+
+    pw.Widget _infoRow(String label, String value) {
+      return pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 5),
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.SizedBox(
+              width: 92,
+              child: pw.Text(
+                '$label:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.Expanded(
+              child: pw.Text(
+                value,
+                style: const pw.TextStyle(fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    pw.MemoryImage? logo;
+    try {
+      final bytes =
+          (await rootBundle.load('assets/icon/app_icon.png')).buffer.asUint8List();
+      logo = pw.MemoryImage(bytes);
+    } catch (_) {
+      logo = null;
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(28),
+        build: (context) => [
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  width: 54,
+                  height: 54,
+                  margin: const pw.EdgeInsets.only(right: 12),
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                ),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'INFORME TECNICO DE DIAGNOSTICO',
+                      style: pw.TextStyle(
+                        fontSize: 19,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Cultivo de maiz - Reporte tecnico generado por Maiz App',
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.grey700),
+                    ),
+                    pw.SizedBox(height: 5),
+                    pw.Text(
+                      'Fecha de emision: ${_formatDate(DateTime.now().toIso8601String())}',
+                      style: const pw.TextStyle(
+                          fontSize: 9.5, color: PdfColors.grey600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 14),
+          pw.Divider(color: PdfColors.green300),
+          pw.SizedBox(height: 10),
+          _sectionHeader('1. Resumen del diagnostico'),
+          pw.SizedBox(height: 8),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.green200),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              color: PdfColors.green50,
+            ),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      _infoRow('Usuario', userName),
+                      _infoRow('Fecha', created),
+                      _infoRow('Tipo',
+                          tipo == 'plaga' ? 'Diagnostico de plaga' : 'Diagnostico de enfermedad'),
+                      _infoRow('Resultado',
+                          '${expertInfo['title'] ?? rawDisease}'),
+                        _infoRow('Nombre cientifico', scientificName),
+                      _infoRow('Confianza IA', '$confidencePct%'),
+                      pw.Row(
+                        crossAxisAlignment: pw.CrossAxisAlignment.center,
+                        children: [
+                          pw.SizedBox(
+                            width: 92,
+                            child: pw.Text(
+                              'Severidad:',
+                              style: pw.TextStyle(
+                                fontSize: 10,
+                                color: PdfColors.grey700,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: pw.BoxDecoration(
+                              color: _severityColor(severity),
+                              borderRadius:
+                                  const pw.BorderRadius.all(pw.Radius.circular(10)),
+                            ),
+                            child: pw.Text(
+                              severity,
+                              style: pw.TextStyle(
+                                color: PdfColors.white,
+                                fontSize: 9.5,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(width: 12),
+                pw.Container(
+                  width: 170,
+                  height: 170,
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.green200),
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(8)),
+                    color: PdfColors.white,
+                  ),
+                  child: diagnosisImage != null
+                      ? pw.ClipRRect(
+                          horizontalRadius: 8,
+                          verticalRadius: 8,
+                          child: pw.Image(diagnosisImage, fit: pw.BoxFit.cover),
+                        )
+                      : pw.Center(
+                          child: pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text(
+                              'Imagen no disponible',
+                              textAlign: pw.TextAlign.center,
+                              style: const pw.TextStyle(
+                                  fontSize: 9.5, color: PdfColors.grey700),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 12),
+          _sectionHeader('2. Descripcion tecnica'),
+          pw.SizedBox(height: 5),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+            ),
+            child: pw.Text('${expertInfo['description'] ?? 'No disponible'}'),
+          ),
+          pw.SizedBox(height: 12),
+          _sectionHeader('3. Recomendaciones de manejo'),
+          pw.SizedBox(height: 6),
+          pw.Bullet(text: 'Control quimico: ${expertInfo['chemical'] ?? 'No disponible'}'),
+          pw.SizedBox(height: 5),
+          pw.Bullet(text: 'Control organico: ${expertInfo['organic'] ?? 'No disponible'}'),
+          pw.SizedBox(height: 5),
+          pw.Bullet(text: 'Prevencion futura: ${expertInfo['prevention'] ?? 'No disponible'}'),
+          pw.SizedBox(height: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Text(
+              'Nota: Este informe es una ayuda tecnica basada en IA. Verifique en campo y consulte un tecnico agronomo antes de aplicar productos.',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  Future<void> _downloadDiagnosisPdf(BuildContext context) async {
+    try {
+      final bytes = await _buildDiagnosisPdfBytes();
+      final safeDate = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final fileName = 'diagnostico_maiz_$safeDate.pdf';
+      final savedPath = await FlutterFileDialog.saveFile(
+        params: SaveFileDialogParams(
+          data: bytes,
+          fileName: fileName,
+        ),
+      );
+
+      if (!context.mounted) return;
+
+      if (savedPath == null || savedPath.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Guardado cancelado por el usuario.')),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF guardado en: $savedPath'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo descargar el PDF: $e')),
+      );
+    }
+  }
+
+  Future<void> _printOrSharePdf(BuildContext context) async {
+    try {
+      final bytes = await _buildDiagnosisPdfBytes();
+      final safeDate = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final fileName = 'diagnostico_maiz_$safeDate.pdf';
+
+      await Printing.sharePdf(bytes: bytes, filename: fileName);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo generar el PDF: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. EXTRAER DATOS BÁSICOS
     final rawDisease = "${diag['disease'] ?? ''}";
+    final scientificName = CornDiseaseLibrary.getScientificName(rawDisease);
     final userName = "${diag['user_name'] ?? 'Usuario desconocido'}";
     final created = "${diag['created_at'] ?? '-'}";
     final confidence = (diag['confidence'] ?? 0.0);
@@ -260,6 +792,18 @@ class DiagnosisDetailScreen extends StatelessWidget {
         backgroundColor: primaryGreen,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Descargar PDF',
+            icon: const Icon(Icons.download_rounded),
+            onPressed: () => _downloadDiagnosisPdf(context),
+          ),
+          IconButton(
+            tooltip: 'Imprimir o compartir PDF',
+            icon: const Icon(Icons.print_rounded),
+            onPressed: () => _printOrSharePdf(context),
+          ),
+        ],
         title: RichText(
           text: const TextSpan(
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
@@ -344,6 +888,9 @@ class DiagnosisDetailScreen extends StatelessWidget {
                         
                         // Aquí usamos el título amigable del experto
                         _infoRow("Enfermedad", expertTitle, highlight: true),
+
+                        const SizedBox(height: 8),
+                        _infoRow("Nombre científico", scientificName),
                         
                         const SizedBox(height: 10),
                         _infoRow(

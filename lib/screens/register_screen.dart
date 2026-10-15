@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final connectivity = await Connectivity().checkConnectivity();
     bool success = false;
 
-    if (connectivity != ConnectivityResult.none) {
+    if (connectivity.any((result) => result != ConnectivityResult.none)) {
       // antes de crear la cuenta, probamos si el correo ya existe
       final taken = await ApiService.isEmailTaken(email);
       if (taken) {

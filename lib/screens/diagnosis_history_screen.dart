@@ -24,6 +24,14 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
   List<Map<String, dynamic>> diagnoses = [];
 
   String _diagKey(Map<String, dynamic> item) {
+    final serverImagePath =
+        (item['server_image_path'] ?? item['serverImagePath'] ?? '')
+            .toString()
+            .trim();
+    if (serverImagePath.isNotEmpty) {
+      return 'srvimg_${_normalizePath(serverImagePath)}';
+    }
+
     final id = item['id']?.toString();
     if (id != null && id.isNotEmpty) return 'id_$id';
 
@@ -32,7 +40,91 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
 
     final imagePath = (item['image_path'] ?? '').toString();
     final createdAt = (item['created_at'] ?? '').toString();
-    return 'path_${imagePath}_$createdAt';
+    return 'path_${_normalizePath(imagePath)}_$createdAt';
+  }
+
+  String _normalizePath(String value) {
+    final clean = value.trim();
+    if (clean.isEmpty) return '';
+    final parts = clean.split(RegExp(r'[\\/]'));
+    return parts.isNotEmpty ? parts.last : clean;
+  }
+
+  String _normalizeText(String value) {
+    var text = value.trim().toLowerCase();
+    const withDia = 'áéíóúüñ';
+    const withoutDia = 'aeiouun';
+    for (var i = 0; i < withDia.length; i++) {
+      text = text.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return text;
+  }
+
+  String _prettyDiseaseLabel(dynamic rawValue) {
+    final raw = (rawValue ?? '').toString().trim();
+    if (raw.isEmpty) return 'Desconocido';
+
+    final normalized = _normalizeText(raw.replaceAll('_', ' '));
+    if (normalized.contains('no es plaga') || normalized.contains('no plaga')) {
+      return 'No es plaga';
+    }
+    if (normalized.contains('gusano ejercito')) return 'Gusano ejercito';
+    if (normalized.contains('gusano cortador')) return 'Gusano cortador';
+    if (normalized.contains('pulgones') || normalized.contains('pulgon')) {
+      return 'Pulgones';
+    }
+    if (normalized.contains('pulgilla') || normalized.contains('chicharrita')) {
+      return 'Pulgilla';
+    }
+
+    return raw
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((w) => w.trim().isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+        .join(' ');
+  }
+
+  String _extractDiagnosisName(Map<String, dynamic> item) {
+    final value = (item['disease'] ??
+            item['label'] ??
+            item['disease_name'] ??
+            item['prediction'] ??
+            item['class'] ??
+            item['result'] ??
+            '')
+        .toString()
+        .trim();
+    return value;
+  }
+
+  String _fallbackRecommendation(String diseaseName) {
+    final normalized = _normalizeText(diseaseName.replaceAll('_', ' '));
+
+    if (normalized.contains('no es plaga') || normalized.contains('no plaga')) {
+      return 'No se detecta plaga en la imagen. No apliques insecticida; revisa la planta y toma otra foto enfocada para confirmar.';
+    }
+    if (normalized.contains('pulgones') || normalized.contains('pulgon')) {
+      return 'Monitorea el enves de la hoja y aplica control suave (jabon potasico o neem) solo si aumenta la presencia de pulgones.';
+    }
+    if (normalized.contains('gusano cortador')) {
+      return 'Revisa base del tallo al atardecer y retira larvas visibles. Si el dano avanza, aplica control dirigido en la base.';
+    }
+    if (normalized.contains('gusano ejercito')) {
+      return 'Inspecciona bordes del cultivo y controla focos tempranos. Si hay alta infestacion, aplica manejo integrado de forma localizada.';
+    }
+    if (normalized.contains('pulgilla') || normalized.contains('chicharrita')) {
+      return 'Mantén monitoreo semanal y controla malezas alrededor. Actua solo si observas aumento de insectos y dano nuevo.';
+    }
+
+    return 'Mantén monitoreo del cultivo y repite la captura con buena luz para obtener una recomendación más precisa.';
+  }
+
+  String _resolveRecommendation(Map<String, dynamic> diag) {
+    final recommendation = (diag['recommendation'] ?? '').toString().trim();
+    final disease = _extractDiagnosisName(diag);
+    if (recommendation.isNotEmpty) return recommendation;
+    return _fallbackRecommendation(disease);
   }
 
   @override
@@ -53,21 +145,25 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
     try {
       // 1. Intentar cargar de Internet
       final online = await ApiService.checkBackendHealth();
+      final localRows = await DBService.getAllDiagnoses(userId: widget.userId);
 
       if (online) {
         final result = await ApiService.fetchDiagnoses(userId: widget.userId);
 
         if (result != null && result.isNotEmpty) {
-          rawList = result;
-          // Cachear en SQLite para modo offline
-          await DBService.replaceDiagnosesForUser(widget.userId, result);
+          // Se fusiona con local para no perder diagnósticos que aún no estén
+          // reflejados por el endpoint remoto en ese instante.
+          rawList = [
+            ...localRows,
+            ...result,
+          ];
         } else {
-          // Si internet da lista vacía, cargamos local por si acaso
-          rawList = await DBService.getAllDiagnoses(userId: widget.userId);
+          // Si internet da lista vacía, usamos local por seguridad.
+          rawList = localRows;
         }
       } else {
         // 2. Si no hay internet, cargar de Base de Datos local
-        rawList = await DBService.getAllDiagnoses(userId: widget.userId);
+        rawList = localRows;
       }
     } catch (e) {
       print("Error cargando historial: $e");
@@ -77,8 +173,8 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
     // 3. FILTRADO INTELIGENTE (Detecta mayúsculas/minúsculas)
     // Solo dejamos pasar los que NO contengan "no_maiz"
     final filteredList = rawList.where((item) {
-      // Obtenemos el nombre y lo pasamos a minúsculas
-      final diseaseName = (item['disease'] ?? '').toString().toLowerCase();
+      // Obtenemos el nombre efectivo sin depender de un único campo.
+      final diseaseName = _extractDiagnosisName(item).toLowerCase();
 
       // Si contiene "no_maiz", devolvemos false (se elimina de la lista)
       // También filtramos "unknown" por si acaso
@@ -278,6 +374,8 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
     final String dateStr = (diag["created_at"] ?? "").toString();
     final String displayDate =
         dateStr.length > 10 ? dateStr.substring(0, 10) : dateStr;
+    final diseaseLabel = _prettyDiseaseLabel(_extractDiagnosisName(diag));
+    final recommendationText = _resolveRecommendation(diag);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -313,8 +411,8 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
                 Hero(
                   tag: "diag_img_${diag['id'] ?? UniqueKey()}",
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 92,
+                    height: 92,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
@@ -330,7 +428,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +450,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        diag["disease"] ?? "Desconocido",
+                        diseaseLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -363,8 +461,7 @@ class _DiagnosisHistoryScreenState extends State<DiagnosisHistoryScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        diag["recommendation"] ??
-                            "Sin recomendación disponible",
+                        recommendationText,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

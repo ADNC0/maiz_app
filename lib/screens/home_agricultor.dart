@@ -10,6 +10,7 @@ import 'package:maiz_app/screens/diagnosis_history_screen.dart';
 import 'package:maiz_app/screens/login_screen.dart';
 
 import 'package:maiz_app/services/api_service.dart';
+import 'package:maiz_app/services/db_service.dart';
 import 'package:maiz_app/services/session_service.dart';
 
 class HomeAgricultor extends StatefulWidget {
@@ -85,11 +86,17 @@ class _HomeAgricultorState extends State<HomeAgricultor> {
   Future<void> _loadStats() async {
     final userId = widget.userId;
     final diagnos = await ApiService.fetchDiagnoses(userId: userId);
+    final localDiagnosCount = await DBService.countDiagnosesByUser(userId);
     final parcelas = await ApiService.fetchParcels(userId);
+
+    final remoteCount = diagnos?.length ?? 0;
+    final mergedDiagCount = remoteCount > localDiagnosCount
+        ? remoteCount
+        : localDiagnosCount;
 
     if (mounted) {
       setState(() {
-        totalDiagnosticos = diagnos?.length ?? 0;
+        totalDiagnosticos = mergedDiagCount;
         totalParcelas = parcelas?.length ?? 0;
       });
     }
@@ -505,7 +512,10 @@ class _HomeAgricultorState extends State<HomeAgricultor> {
   Widget build(BuildContext context) {
     // Definimos las 3 pantallas actuales
     List<Widget> screens = [
-      UserParcelsScreen(userId: widget.userId), // Index 0
+      UserParcelsScreen(
+        userId: widget.userId,
+        onDiagnosisSaved: _loadStats,
+      ), // Index 0
       DiagnosisHistoryScreen(userId: widget.userId), // Index 1
       _buildProfileScreen(), // Index 2
       const DiseaseInfoScreen(), // Index 3
@@ -557,14 +567,19 @@ class _HomeAgricultorState extends State<HomeAgricultor> {
   Widget _buildAnimatedNavItem(int index, IconData icon, String label) {
     bool isSelected = currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => currentIndex = index),
+      onTap: () {
+        setState(() => currentIndex = index);
+        if (index == 2) {
+          _loadStats();
+        }
+      },
       // Comportamiento de click transparente
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         padding: EdgeInsets.symmetric(
-            horizontal: isSelected ? 20 : 10, vertical: 10),
+            horizontal: isSelected ? 10 : 8, vertical: 10),
         decoration: BoxDecoration(
           color:
               isSelected ? primaryGreen.withOpacity(0.15) : Colors.transparent,
@@ -578,11 +593,16 @@ class _HomeAgricultorState extends State<HomeAgricultor> {
                 color: isSelected ? primaryGreen : Colors.grey, size: 28),
             if (isSelected) ...[
               const SizedBox(width: 8),
-              Text(label,
-                  style: const TextStyle(
-                      color: primaryGreen,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14)),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                    color: primaryGreen,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
+              ),
             ]
           ],
         ),

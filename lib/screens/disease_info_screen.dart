@@ -14,7 +14,7 @@ class DiseaseData {
   final String propagation;
   final String prevention;
   final String bestPractices;
-  final String imageUrl;
+  final String imageAsset;
 
   const DiseaseData({
     required this.name,
@@ -27,7 +27,35 @@ class DiseaseData {
     required this.propagation,
     required this.prevention,
     required this.bestPractices,
-    required this.imageUrl,
+    required this.imageAsset,
+  });
+}
+
+class PestData {
+  final String name;
+  final String scientificName;
+  final String tagline;
+  final IconData icon;
+  final Color primaryColor;
+  final String description;
+  final String damage;
+  final String monitoring;
+  final String control;
+  final String bestPractices;
+  final String imageAsset;
+
+  const PestData({
+    required this.name,
+    required this.scientificName,
+    required this.tagline,
+    required this.icon,
+    required this.primaryColor,
+    required this.description,
+    required this.damage,
+    required this.monitoring,
+    required this.control,
+    required this.bestPractices,
+    required this.imageAsset,
   });
 }
 
@@ -41,8 +69,7 @@ const kDiseases = <DiseaseData>[
     tagline: 'Pústulas anaranjadas en ambas caras de la hoja',
     icon: Icons.grain,
     primaryColor: Color(0xFFD84315),
-    imageUrl:
-        'https://upload.wikimedia.org/wikipedia/commons/8/8c/Puccinia_sorghi_%2805%29.jpg',
+    imageAsset: 'assets/guide/disease_roya.jpg',
     description:
         'La Roya del Maíz es una enfermedad fúngica que se manifiesta como '
         'pústulas pequeñas de color naranja–marrón en ambas caras de las hojas. '
@@ -79,8 +106,7 @@ const kDiseases = <DiseaseData>[
     tagline: 'Lesiones elípticas grisáceas que avanzan de abajo hacia arriba',
     icon: Icons.whatshot,
     primaryColor: Color(0xFF6D4C41),
-    imageUrl:
-        'https://upload.wikimedia.org/wikipedia/commons/2/2d/Northern_corn_leaf_blight.JPG',
+    imageAsset: 'assets/guide/disease_tizon.jpg',
     description:
         'El Tizón del Norte del Maíz produce lesiones elípticas de 2 a 15 cm '
         'de largo, de color gris–verdoso a café con bordes ondulados. Las '
@@ -117,8 +143,7 @@ const kDiseases = <DiseaseData>[
     tagline: 'Manchas rectangulares limitadas por las nervaduras de la hoja',
     icon: Icons.blur_on,
     primaryColor: Color(0xFF546E7A),
-    imageUrl:
-        'https://upload.wikimedia.org/wikipedia/commons/1/12/Gray_leaf_spot_Cercospora_zeae-maydis_5465607.png',
+    imageAsset: 'assets/guide/disease_mancha_gris.png',
     description:
         'La Mancha Gris del Maíz se presenta como lesiones rectangulares de '
         'color gris a pardo, delimitadas entre las nerviaciones de la hoja. '
@@ -151,14 +176,143 @@ const kDiseases = <DiseaseData>[
   ),
 ];
 
+const kPests = <PestData>[
+  PestData(
+    name: 'Gusano Cortador Amarillo',
+    scientificName: 'Agrotis ipsilon',
+    tagline: 'Larvas cortan plantas jovenes al nivel del suelo',
+    icon: Icons.content_cut,
+    primaryColor: Color(0xFF8D6E63),
+    imageAsset: 'assets/guide/pest_gusano_cortador_amarillo.jpg',
+    description:
+        'El gusano cortador amarillo ataca en las primeras etapas del cultivo '
+        'y corta las plantulas durante la noche. En focos severos puede reducir '
+        'el stand de plantas y afectar el establecimiento uniforme del lote.',
+    damage: '• Corte de tallos jovenes a ras de suelo\n'
+        '• Parches con baja densidad de plantas\n'
+        '• Retraso del cultivo por resiembra\n'
+        '• Perdida temprana de vigor y potencial productivo',
+    monitoring: '• Revisar de tarde y noche en etapas iniciales\n'
+        '• Buscar plantas recien cortadas y larvas en suelo superficial\n'
+        '• Muestrear bordes y zonas con residuos vegetales\n'
+        '• Registrar porcentaje de plantas danadas por bloque',
+    control: '• Mantener control de malezas antes de la siembra\n'
+        '• Aplicar cebos o control focalizado en focos activos\n'
+        '• Usar insecticidas autorizados segun umbral tecnico\n'
+        '• Rotar ingredientes activos para evitar resistencia',
+    bestPractices: '• Preparar bien el terreno y reducir refugios de larvas\n'
+        '• Monitorear diariamente durante emergencia\n'
+        '• Reponer fallas de poblacion de forma oportuna\n'
+        '• Integrar manejo cultural, biologico y quimico',
+  ),
+  PestData(
+    name: 'Pulguilla',
+    scientificName: 'Phyllotreta striolata',
+    tagline: 'Pequenos escarabajos que raspan hojas tiernas',
+    icon: Icons.pest_control_rodent,
+    primaryColor: Color(0xFF455A64),
+    imageAsset: 'assets/guide/pest_pulguilla.jpg',
+    description:
+        'La pulguilla perfora o raspa hojas jovenes, dejando sintomas de '
+        'cribado y debilitando plantulas. Su actividad aumenta con clima seco '
+        'y presencia de malezas hospederas cercanas.',
+    damage: '• Orificios pequenos en hojas nuevas\n'
+        '• Raspado superficial que reduce area foliar activa\n'
+        '• Mayor estres en plantas pequenas\n'
+        '• Perdida de uniformidad en lotes recien emergidos',
+    monitoring: '• Inspeccionar hojas superiores en primeras semanas\n'
+        '• Verificar presencia de adultos saltadores al mover plantas\n'
+        '• Evaluar dano por porcentaje de hoja afectada\n'
+        '• Revisar bordes y sectores con malezas',
+    control: '• Manejo oportuno de malezas hospederas\n'
+        '• Tratamiento de semilla cuando historial de ataque es alto\n'
+        '• Aplicaciones focalizadas segun umbral economico\n'
+        '• Respetar dosis y periodo de reingreso',
+    bestPractices: '• Siembra uniforme para reducir ventanas de susceptibilidad\n'
+        '• Monitoreo intensivo en emergencia y V2-V4\n'
+        '• Mantener bordes limpios y sin cruciferas espontaneas\n'
+        '• Registrar presion de plaga por lote y campana',
+  ),
+  PestData(
+    name: 'Gusano Ejercito',
+    scientificName: 'Spodoptera frugiperda',
+    tagline: 'Consumo rapido de hojas y dano en cogollo',
+    icon: Icons.pest_control,
+    primaryColor: Color(0xFFAD1457),
+    imageAsset: 'assets/guide/pest_gusano_ejercito.jpg',
+    description:
+        'El gusano ejercito puede avanzar rapidamente en grupo, causando '
+        'defoliacion y dano en cogollo. En maiz, los ataques tempranos '
+        'afectan crecimiento y rendimiento final del cultivo.',
+    damage: '• Perforaciones y desgarros extensos en hojas\n'
+        '• Presencia de excremento en cogollo\n'
+        '• Reduccion de area fotosintetica\n'
+        '• Riesgo de perdidas severas en alta infestacion',
+    monitoring: '• Recorrer el lote 2 veces por semana\n'
+        '• Revisar cogollo, hojas nuevas y excremento\n'
+        '• Priorizar control en etapas V3-V8\n'
+        '• Mapear focos para respuesta rapida',
+    control: '• Uso de biocontrol (Bt y enemigos naturales)\n'
+        '• Aplicacion dirigida al cogollo en focos activos\n'
+        '• Rotacion de modos de accion\n'
+        '• Intervencion segun umbral tecnico recomendado',
+    bestPractices: '• Monitoreo temprano y continuo\n'
+        '• Evitar aplicaciones preventivas sin evidencia\n'
+        '• Conservar registros de incidencia por parcela\n'
+        '• Integrar manejo cultural, biologico y quimico',
+  ),
+  PestData(
+    name: 'Pulgones',
+    scientificName: 'Rhopalosiphum maidis',
+    tagline: 'Colonias succionadoras con melaza en hojas y panoja',
+    icon: Icons.bug_report,
+    primaryColor: Color(0xFF5D4037),
+    imageAsset: 'assets/guide/pest_pulgones.jpg',
+    description:
+        'Los pulgones se concentran en colonias y succionan savia, debilitando '
+        'la planta. Tambien generan melaza que favorece fumagina y afecta la '
+        'captacion de luz en el follaje.',
+    damage: '• Amarillamiento y enrollamiento de hojas\n'
+        '• Reduccion del crecimiento por perdida de savia\n'
+        '• Melaza pegajosa y desarrollo de fumagina\n'
+        '• Posible transmision de virosis',
+    monitoring: '• Revisar envés de hojas y panoja\n'
+        '• Buscar colonias, melaza y hormigas asociadas\n'
+        '• Muestrear diferentes sectores del lote\n'
+        '• Vigilar picos de poblacion en clima seco',
+    control: '• Conservar controladores biologicos naturales\n'
+        '• Aplicar control quimico solo con umbral superado\n'
+        '• Cobertura efectiva en envés de hoja\n'
+        '• Rotar ingredientes activos',
+    bestPractices: '• Evitar exceso de nitrogeno\n'
+        '• Manejar malezas reservorio\n'
+        '• Registrar incidencia para decisiones tempranas\n'
+        '• Integrar manejo biologico, cultural y quimico',
+  ),
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PANTALLA DE LISTA
 // ─────────────────────────────────────────────────────────────────────────────
-class DiseaseInfoScreen extends StatelessWidget {
+class DiseaseInfoScreen extends StatefulWidget {
   const DiseaseInfoScreen({super.key});
+
+  @override
+  State<DiseaseInfoScreen> createState() => _DiseaseInfoScreenState();
+}
+
+class _DiseaseInfoScreenState extends State<DiseaseInfoScreen> {
+  String _selectedGuide = 'enfermedad';
 
   static const Color _darkGreen = Color(0xFF2E7D32);
   static const Color _bgColor = Color(0xFFF1F8E9);
+
+    String get _title =>
+      _selectedGuide == 'plaga' ? 'Guia de Plagas' : 'Guia de Enfermedades';
+
+    String get _subtitle => _selectedGuide == 'plaga'
+      ? 'Identifica y maneja plagas del maiz'
+      : 'Conoce las enfermedades del maiz';
 
   @override
   Widget build(BuildContext context) {
@@ -202,12 +356,12 @@ class DiseaseInfoScreen extends StatelessWidget {
                             color: Colors.white, size: 28),
                       ),
                       const SizedBox(width: 15),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Guía de Enfermedades',
+                              _title,
                               style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.bold,
@@ -216,7 +370,7 @@ class DiseaseInfoScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              'Conoce las enfermedades del maíz',
+                              _subtitle,
                               style: TextStyle(
                                   fontSize: 14, color: Colors.white70),
                             ),
@@ -227,26 +381,92 @@ class DiseaseInfoScreen extends StatelessWidget {
                   ),
                 ),
 
-                // ── Lista de enfermedades ──
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: kDiseases.length,
-                    itemBuilder: (context, index) {
-                      final disease = kDiseases[index];
-                      return _DiseaseCard(
-                        disease: disease,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                DiseaseDetailScreen(disease: disease),
-                          ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                      );
-                    },
+                      ],
+                    ),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Enfermedades'),
+                          selected: _selectedGuide == 'enfermedad',
+                          selectedColor: const Color(0xFF81C784),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedGuide = 'enfermedad');
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Plagas'),
+                          selected: _selectedGuide == 'plaga',
+                          selectedColor: const Color(0xFFFFCC80),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedGuide = 'plaga');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+
+                // ── Lista de enfermedades / plagas ──
+                Expanded(
+                  child: _selectedGuide == 'enfermedad'
+                      ? ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: kDiseases.length,
+                          itemBuilder: (context, index) {
+                            final disease = kDiseases[index];
+                            return _DiseaseCard(
+                              disease: disease,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DiseaseDetailScreen(disease: disease),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: kPests.length,
+                          itemBuilder: (context, index) {
+                            final pest = kPests[index];
+                            return _PestCard(
+                              pest: pest,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      PestDetailScreen(pest: pest),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -294,8 +514,8 @@ class _DiseaseCard extends StatelessWidget {
               ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  disease.imageUrl,
+                child: Image.asset(
+                  disease.imageAsset,
                   height: 150,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -355,6 +575,122 @@ class _DiseaseCard extends StatelessWidget {
                           const SizedBox(height: 5),
                           Text(
                             disease.tagline,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF455A64),
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        color: Colors.grey[400], size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PestCard extends StatelessWidget {
+  final PestData pest;
+  final VoidCallback onTap;
+
+  const _PestCard({required this.pest, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+                child: Image.asset(
+                  pest.imageAsset,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          pest.primaryColor.withOpacity(0.7),
+                          pest.primaryColor,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(pest.icon, color: Colors.white, size: 50),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: pest.primaryColor.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child:
+                          Icon(pest.icon, color: pest.primaryColor, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pest.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                          Text(
+                            pest.scientificName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            pest.tagline,
                             style: const TextStyle(
                               fontSize: 13,
                               color: Color(0xFF455A64),
@@ -485,8 +821,8 @@ class DiseaseDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 14),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: Image.network(
-                            disease.imageUrl,
+                          child: Image.asset(
+                            disease.imageAsset,
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,
@@ -553,6 +889,174 @@ class DiseaseDetailScreen extends StatelessWidget {
           icon: Icons.eco,
           color: const Color(0xFF00695C),
           content: disease.bestPractices,
+        ),
+      ];
+}
+
+class PestDetailScreen extends StatelessWidget {
+  final PestData pest;
+
+  const PestDetailScreen({super.key, required this.pest});
+
+  static const Color _darkGreen = Color(0xFF2E7D32);
+  static const Color _bgColor = Color(0xFFF1F8E9);
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final sections = _buildSections();
+
+    return Scaffold(
+      backgroundColor: _bgColor,
+      body: Stack(
+        children: [
+          ClipPath(
+            clipper: _DiseaseWaveClipper(),
+            child: Container(
+              height: size.height * 0.35,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF81C784), _darkGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white, size: 20),
+                          onPressed: () => Navigator.pop(context),
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(pest.icon, color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pest.name,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              pest.scientificName,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                  fontStyle: FontStyle.italic),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset(
+                            pest.imageAsset,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    pest.primaryColor.withOpacity(0.7),
+                                    pest.primaryColor,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(pest.icon,
+                                    color: Colors.white, size: 60),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      ...sections.map((s) => _SectionExpander(section: s)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_SectionData> _buildSections() => [
+        _SectionData(
+          title: 'Descripción',
+          icon: Icons.info_outline,
+          color: const Color(0xFF1565C0),
+          content: pest.description,
+          initiallyExpanded: true,
+        ),
+        _SectionData(
+          title: 'Daños Principales',
+          icon: Icons.warning_amber_rounded,
+          color: const Color(0xFFBF360C),
+          content: pest.damage,
+        ),
+        _SectionData(
+          title: 'Monitoreo',
+          icon: Icons.search,
+          color: const Color(0xFF6A1B9A),
+          content: pest.monitoring,
+        ),
+        _SectionData(
+          title: 'Control',
+          icon: Icons.health_and_safety_outlined,
+          color: const Color(0xFF2E7D32),
+          content: pest.control,
+        ),
+        _SectionData(
+          title: 'Buenas Prácticas',
+          icon: Icons.eco,
+          color: const Color(0xFF00695C),
+          content: pest.bestPractices,
         ),
       ];
 }

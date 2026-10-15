@@ -32,6 +32,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   String? _diagnosis;
   String? _recommendation;
   bool _isLoading = false;
+  String _selectedDiagnosisType = 'enfermedad';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -85,7 +86,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   Future<void> _tomarFoto() async {
     final XFile? picked = await _picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 85,
+      imageQuality: 80,
+      maxWidth: 1600,
+      maxHeight: 1600,
     );
     if (picked == null) return;
     await _procesarImagen(File(picked.path));
@@ -95,6 +98,8 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     final XFile? picked = await _picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
+      maxWidth: 2048,
+      maxHeight: 2048,
     );
     if (picked == null) return;
     await _procesarImagen(File(picked.path));
@@ -117,13 +122,32 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
     if (connected) {
       try {
-        final result = await ApiService.uploadImage(file);
+        final result = await ApiService.uploadImage(
+          file,
+          tipo: _selectedDiagnosisType,
+        );
 
         if (result == null) throw Exception("Nulo");
 
-        final diagnosis = result['disease']?.toString() ?? 'Desconocido';
-        final recommendation = result['recommendation']?.toString() ?? '';
-        final confidence = (result['confidence'] as num?)?.toDouble() ?? 0.0;
+        final rawDiagnosis = (result['disease'] ??
+            result['label'] ??
+            result['disease_name'] ??
+            result['prediction'] ??
+            result['class'] ??
+            result['result'])
+          ?.toString()
+          .trim();
+        final diagnosis =
+          (rawDiagnosis != null && rawDiagnosis.isNotEmpty)
+            ? rawDiagnosis
+            : 'Desconocido';
+        final recommendation =
+          (result['recommendation'] ?? result['advice'] ?? '')
+            .toString();
+        final confidenceRaw = result['confidence'] ?? result['probability'];
+        final confidence = (confidenceRaw is num)
+          ? confidenceRaw.toDouble()
+          : double.tryParse('$confidenceRaw') ?? 0.0;
 
         await DBService.saveDiagnosis(
           imagePath: file.path,
@@ -132,6 +156,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           recommendation: recommendation,
           confidence: confidence,
           isCornLeaf: true,
+          tipo: _selectedDiagnosisType,
           latitude: position.latitude,
           longitude: position.longitude,
           createdAt: createdAt,
@@ -149,6 +174,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           recommendation: "",
           confidence: 0.0,
           isCornLeaf: true,
+          tipo: _selectedDiagnosisType,
           latitude: position.latitude,
           longitude: position.longitude,
           createdAt: createdAt,
@@ -160,27 +186,22 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         });
       }
     } else {
-      await DBService.saveDiagnosis(
-        imagePath: file.path,
-        userId: widget.userId,
-        disease: "Pendiente",
-        recommendation: "Se analizará luego",
-        confidence: 0.0,
-        isCornLeaf: true,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        createdAt: createdAt,
-      );
+        await DBService.saveDiagnosis(
+          imagePath: file.path,
+          userId: widget.userId,
+          disease: "Pendiente",
+          recommendation: "Se analizará luego",
+          confidence: 0.0,
+          isCornLeaf: true,
+          tipo: _selectedDiagnosisType,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          createdAt: createdAt,
+        );
+      }
 
-      setState(() {
-        _diagnosis = "Guardado localmente (sin conexión)";
-        _recommendation = "";
-      });
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
-  }
-
   void _goToHistorial() {
     Navigator.pushReplacement(
       context,
@@ -266,6 +287,8 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
                     const SizedBox(height: 30),
 
+                    _buildTypeSelector(),
+                    const SizedBox(height: 16),
                     // --- TARJETA DE ACCIÓN (SUBIR FOTO) ---
                     _buildUploadCard(),
 
@@ -306,30 +329,96 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     return null;
   }
 
+  PestData? _matchPest(String? name) {
+    if (name == null) return null;
+    final lower = name.toLowerCase();
+
+    if (lower.contains('agrotis') ||
+        lower.contains('cortador') ||
+        lower.contains('gusano cortador')) {
+      return kPests.firstWhere((p) => p.name == 'Gusano Cortador Amarillo');
+    }
+
+    if (lower.contains('pulguilla') || lower.contains('phyllotreta')) {
+      return kPests.firstWhere((p) => p.name == 'Pulguilla');
+    }
+
+    if (lower.contains('ejercito') ||
+        lower.contains('cogollero') ||
+        lower.contains('frugiperda')) {
+      return kPests.firstWhere((p) => p.name == 'Gusano Ejercito');
+    }
+
+    if (lower.contains('pulgon') ||
+        lower.contains('pulgones') ||
+        lower.contains('rhopalosiphum') ||
+        lower.contains('aphid')) {
+      return kPests.firstWhere((p) => p.name == 'Pulgones');
+    }
+
+    for (final p in kPests) {
+      if (lower.contains(p.name.toLowerCase())) return p;
+    }
+    return null;
+  }
+
   Widget _buildSaberMasButton() {
-    final matched = _matchDisease(_diagnosis);
-    if (matched == null) return const SizedBox.shrink();
+    if (_selectedDiagnosisType == 'plaga') {
+      final matchedPest = _matchPest(_diagnosis);
+      if (matchedPest == null) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: matchedPest.primaryColor,
+              side: BorderSide(color: matchedPest.primaryColor, width: 1.5),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            ),
+            icon: Icon(matchedPest.icon, size: 20),
+            label: Text(
+              'Saber mas sobre ${matchedPest.name}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PestDetailScreen(pest: matchedPest),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final matchedDisease = _matchDisease(_diagnosis);
+    if (matchedDisease == null) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
-            foregroundColor: matched.primaryColor,
-            side: BorderSide(color: matched.primaryColor, width: 1.5),
+            foregroundColor: matchedDisease.primaryColor,
+            side: BorderSide(color: matchedDisease.primaryColor, width: 1.5),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           ),
-          icon: Icon(matched.icon, size: 20),
+          icon: Icon(matchedDisease.icon, size: 20),
           label: Text(
-            'Saber más sobre ${matched.name}',
+            'Saber mas sobre ${matchedDisease.name}',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => DiseaseDetailScreen(disease: matched),
+              builder: (_) => DiseaseDetailScreen(disease: matchedDisease),
             ),
           ),
         ),
@@ -338,6 +427,52 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   // WIDGET: Botón grande para subir foto
+  Widget _buildTypeSelector() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Selecciona tipo de diagnóstico',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              ChoiceChip(
+                label: const Text('Enfermedad'),
+                selected: _selectedDiagnosisType == 'enfermedad',
+                selectedColor: primaryGreen.withOpacity(0.15),
+                onSelected: (_) {
+                  setState(() => _selectedDiagnosisType = 'enfermedad');
+                },
+              ),
+              const SizedBox(width: 10),
+              ChoiceChip(
+                label: const Text('Plaga'),
+                selected: _selectedDiagnosisType == 'plaga',
+                selectedColor: primaryGreen.withOpacity(0.15),
+                onSelected: (_) {
+                  setState(() => _selectedDiagnosisType = 'plaga');
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUploadCard() {
     return Container(
       width: double.infinity,
