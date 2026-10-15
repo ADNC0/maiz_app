@@ -1,0 +1,146 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- aseguramos que el correo sea único en la tabla users
+ALTER TABLE IF EXISTS public.users
+  ADD CONSTRAINT IF NOT EXISTS unique_email UNIQUE(email);
+
+-- tabla auxiliar para tokens de recuperación de contraseña
+CREATE TABLE IF NOT EXISTS public.password_resets (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES public.users(id) ON DELETE CASCADE,
+    token TEXT UNIQUE,
+    expires_at TIMESTAMP NOT NULL
+);
+
+
+SELECT * FROM public.users
+ORDER BY id ASC 
+
+
+
+CREATE OR REPLACE PROCEDURE actualizar_usuario_datos(
+    _id_usuario INT,
+    _nuevo_nombre TEXT,
+    _nuevo_correo TEXT,
+    _nueva_clave TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    _correo_existe INT;
+BEGIN
+    -- 1. Validar duplicados (solo si el correo no es vacío)
+    IF _nuevo_correo IS NOT NULL AND _nuevo_correo <> '' THEN
+        SELECT COUNT(*) INTO _correo_existe 
+        FROM public.users 
+        WHERE email = _nuevo_correo AND id <> _id_usuario;
+
+        IF _correo_existe > 0 THEN
+            RAISE EXCEPTION 'El correo % ya está registrado por otro usuario.', _nuevo_correo;
+        END IF;
+    END IF;
+
+    -- 2. Actualización campo por campo
+    -- Nombre
+    IF _nuevo_nombre IS NOT NULL AND _nuevo_nombre <> '' THEN
+        UPDATE public.users SET name = _nuevo_nombre WHERE id = _id_usuario;
+    END IF;
+
+    -- Correo
+    IF _nuevo_correo IS NOT NULL AND _nuevo_correo <> '' THEN
+        UPDATE public.users SET email = _nuevo_correo WHERE id = _id_usuario;
+    END IF;
+
+    -- Clave (Aquí se hace el hash con crypt obligatoriamente)
+    IF _nueva_clave IS NOT NULL AND _nueva_clave <> '' THEN
+        UPDATE public.users 
+        SET password = crypt(_nueva_clave, gen_salt('bf')) 
+        WHERE id = _id_usuario;
+    END IF;
+
+    -- 3. Verificar si el usuario existía
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Usuario con ID % no encontrado.', _id_usuario;
+    END IF;
+END;
+$$;
+
+
+CALL actualizar_usuario_datos(5, '', '', '45');
+
+CREATE OR REPLACE FUNCTION login_usuario_detallado(
+    _correo TEXT,
+    _clave_ingresada TEXT
+)
+RETURNS TABLE (
+    success BOOLEAN,
+    mensaje TEXT,
+    usuario_id INT,
+    usuario_nombre TEXT,
+    usuario_rol VARCHAR(30) -- Coincide con el character varying(30) de tu tabla
+) 
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    _user_record RECORD;
+BEGIN
+    -- 1. Buscar al usuario por correo
+    SELECT * INTO _user_record FROM public.users WHERE email = _correo;
+
+    -- VALIDACIÓN: ¿Existe el correo?
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'El correo electrónico no está registrado.'::TEXT, NULL::INT, NULL::TEXT, NULL::VARCHAR(30);
+        RETURN;
+    END IF;
+
+    -- VALIDACIÓN: ¿La cuenta está activa?
+    IF _user_record.status = FALSE THEN
+        RETURN QUERY SELECT FALSE, 'Cuenta desactivada. Contacte al administrador.'::TEXT, NULL::INT, NULL::TEXT, NULL::VARCHAR(30);
+        RETURN;
+    END IF;
+
+    -- VALIDACIÓN: ¿La contraseña es correcta?
+    IF _user_record.password = crypt(_clave_ingresada, _user_record.password) THEN
+        -- ÉXITO: Forzamos el cast a VARCHAR(30) para asegurar la devolución del rol
+        RETURN QUERY SELECT 
+            TRUE, 
+            'Ingreso exitoso.'::TEXT, 
+            _user_record.id, 
+            _user_record.name::TEXT, 
+            _user_record.role::VARCHAR(30);
+    ELSE
+        -- ERROR: Contraseña incorrecta
+        RETURN QUERY SELECT FALSE, 'Contraseña incorrecta. Inténtelo de nuevo.'::TEXT, NULL::INT, NULL::TEXT, NULL::VARCHAR(30);
+    END IF;
+
+END;
+$$;
+
+UPDATE public.users SET status = false WHERE id = 12;
+SELECT * FROM login_usuario_detallado('correo_ocupado@gmail.com', '45');
+
+
+
+
+
+
+--
+
+
+CREATE OR REPLACE PROCEDURE cambiar_estado_usuario(usuario_id_param INT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Cambia el estado al valor opuesto (si es true pasa a false, y viceversa)
+    UPDATE public.users
+    SET status = NOT status
+    WHERE id = usuario_id_param;
+
+    -- Mensaje de confirmación en consola
+    IF FOUND THEN
+        RAISE NOTICE 'Estado del usuario con ID % actualizado correctamente.', usuario_id_param;
+    ELSE
+        RAISE NOTICE 'No se encontró ningún usuario con el ID %.', usuario_id_param;
+    END IF;
+END;
+$$;
