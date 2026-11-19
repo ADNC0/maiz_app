@@ -214,6 +214,13 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
         }
       }
 
+      // Si todo falló, usar los datos originales como enfermedades
+      if (diseaseList.isEmpty && pestList.isEmpty && diseaseEntries.isNotEmpty) {
+        for (final entry in diseaseEntries) {
+          diseaseList.add({'label': entry.key, 'count': entry.value});
+        }
+      }
+
       setState(() {
         diseases = diseaseList;
         diseaseDiagnoses = diseaseList;

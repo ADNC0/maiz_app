@@ -186,7 +186,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           : double.tryParse('$confidenceRaw') ?? 0.0;
 
         await DBService.saveDiagnosis(
-          imagePath: file.path,
+          imagePath: compressedFile.path,
           userId: widget.userId,
           disease: diagnosis,
           recommendation: recommendation,
@@ -204,7 +204,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         });
       } catch (e) {
         await DBService.saveDiagnosis(
-          imagePath: file.path,
+          imagePath: compressedFile.path,
           userId: widget.userId,
           disease: "Guardado localmente",
           recommendation: "",
@@ -223,7 +223,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       }
     } else {
         await DBService.saveDiagnosis(
-          imagePath: file.path,
+          imagePath: compressedFile.path,
           userId: widget.userId,
           disease: "Pendiente",
           recommendation: "Se analizará luego",
