@@ -58,6 +58,8 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
 
   Map<String, dynamic>? overview;
   List<Map<String, dynamic>> diseases = [];
+  List<Map<String, dynamic>> diseaseDiagnoses = [];
+  List<Map<String, dynamic>> pestDiagnoses = [];
   List<Map<String, dynamic>> dataset = [];
   List<Map<String, dynamic>> pestDataset =
       List<Map<String, dynamic>>.from(fixedPestDatasetCounts);
@@ -195,10 +197,27 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
       final diseaseEntries = diseaseCounter.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
 
+      // Separar enfermedades y plagas
+      final diseaseList = <Map<String, dynamic>>[];
+      final pestList = <Map<String, dynamic>>[];
+      
+      final pestKeywords = ['pulgon', 'gusano', 'pulguilla', 'plaga'];
+      
+      for (final entry in diseaseEntries) {
+        final label = entry.key.toLowerCase();
+        final isPest = pestKeywords.any((keyword) => label.contains(keyword));
+        
+        if (isPest) {
+          pestList.add({'label': entry.key, 'count': entry.value});
+        } else {
+          diseaseList.add({'label': entry.key, 'count': entry.value});
+        }
+      }
+
       setState(() {
-        diseases = diseaseEntries
-            .map((e) => {'label': e.key, 'count': e.value})
-            .toList();
+        diseases = diseaseList;
+        diseaseDiagnoses = diseaseList;
+        pestDiagnoses = pestList;
         diseasesError = false;
         diseasesLoading = false;
       });
@@ -361,7 +380,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
   }
 
   List<PieChartSectionData> buildDiseaseChart() {
-    return diseases.asMap().entries.map((entry) {
+    return diseaseDiagnoses.asMap().entries.map((entry) {
       final index = entry.key;
       final value = (entry.value["count"] as int).toDouble();
 
@@ -374,30 +393,54 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     }).toList();
   }
 
-  List<PieChartSectionData> buildDatasetChart() {
+  List<PieChartSectionData> buildPestDiagnosesChart() {
+    return pestDiagnoses.asMap().entries.map((entry) {
+      final index = entry.key;
+      final value = (entry.value["count"] as int).toDouble();
+
+      return PieChartSectionData(
+        value: value,
+        color: _colorForIndex(index),
+        radius: 70,
+        title: '',
+      );
+    }).toList();
+  }
+
+  List<BarChartGroupData> buildDatasetChart() {
     return dataset.asMap().entries.map((entry) {
       final index = entry.key;
       final value = (entry.value["count"] as int).toDouble();
 
-      return PieChartSectionData(
-        value: value,
-        color: _colorForIndex(index),
-        radius: 70,
-        title: '',
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            color: _colorForIndex(index),
+            width: 20,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
       );
     }).toList();
   }
 
-  List<PieChartSectionData> buildPestDatasetChart() {
+  List<BarChartGroupData> buildPestDatasetChart() {
     return pestDataset.asMap().entries.map((entry) {
       final index = entry.key;
       final value = (entry.value["count"] as int).toDouble();
 
-      return PieChartSectionData(
-        value: value,
-        color: _colorForIndex(index),
-        radius: 70,
-        title: '',
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            color: _colorForIndex(index),
+            width: 20,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
       );
     }).toList();
   }
@@ -485,9 +528,9 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          _title("Diagnósticos más comunes"),
+          _title("Enfermedades más comunes"),
           _subtitle(
-              "Incluye enfermedades y plagas detectadas en registros reales de usuarios."),
+              "Enfermedades detectadas en registros reales de usuarios."),
           if (diseasesLoading)
             const SizedBox(
               height: 260,
@@ -497,6 +540,11 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             _blockError(
               "No se pudieron cargar diagnósticos comunes.",
               _loadDiseasesBlock,
+            )
+          else if (diseaseDiagnoses.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text("Sin datos de enfermedades")),
             )
           else ...[
             SizedBox(
@@ -509,7 +557,39 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                 ),
               ),
             ),
-            _legend(diseases, prettifyLabels: true),
+            _legend(diseaseDiagnoses, prettifyLabels: true),
+          ],
+          const SizedBox(height: 30),
+          _title("Plagas más comunes"),
+          _subtitle(
+              "Plagas detectadas en registros reales de usuarios."),
+          if (diseasesLoading)
+            const SizedBox(
+              height: 260,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (diseasesError)
+            _blockError(
+              "No se pudieron cargar diagnósticos comunes.",
+              _loadDiseasesBlock,
+            )
+          else if (pestDiagnoses.isEmpty)
+            const SizedBox(
+              height: 100,
+              child: Center(child: Text("Sin datos de plagas")),
+            )
+          else ...[
+            SizedBox(
+              height: 260,
+              child: PieChart(
+                PieChartData(
+                  centerSpaceRadius: 40,
+                  sectionsSpace: 4,
+                  sections: buildPestDiagnosesChart(),
+                ),
+              ),
+            ),
+            _legend(pestDiagnoses, prettifyLabels: true),
           ],
           const SizedBox(height: 40),
           _title("Total de datos usados para entrenar IA enfermedades"),
@@ -527,11 +607,39 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           else
             SizedBox(
               height: 260,
-              child: PieChart(
-                PieChartData(
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 4,
-                  sections: buildDatasetChart(),
+              child: BarChart(
+                BarChartData(
+                  barGroups: buildDatasetChart(),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() >= dataset.length) return const Text('');
+                          final label = _prettifyLabel(dataset[value.toInt()]['label']);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              label.length > 8 ? '${label.substring(0, 8)}...' : label,
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -580,11 +688,39 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           _subtitle("Cantidad de imágenes del dataset de plagas."),
           SizedBox(
             height: 260,
-            child: PieChart(
-              PieChartData(
-                centerSpaceRadius: 40,
-                sectionsSpace: 4,
-                sections: buildPestDatasetChart(),
+            child: BarChart(
+              BarChartData(
+                barGroups: buildPestDatasetChart(),
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= pestDataset.length) return const Text('');
+                        final label = _prettifyLabel(pestDataset[value.toInt()]['label']);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            label.length > 8 ? '${label.substring(0, 8)}...' : label,
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
               ),
             ),
           ),

@@ -52,9 +52,27 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
     final entries = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    // Separar enfermedades y plagas
+    final diseaseList = <MapEntry<String, int>>[];
+    final pestList = <MapEntry<String, int>>[];
+    
+    final pestKeywords = ['pulgon', 'gusano', 'pulguilla', 'plaga'];
+    
+    for (final entry in entries) {
+      final label = entry.key.toLowerCase();
+      final isPest = pestKeywords.any((keyword) => label.contains(keyword));
+      
+      if (isPest) {
+        pestList.add(entry);
+      } else {
+        diseaseList.add(entry);
+      }
+    }
+
     return _DiseaseSummary(
       totalImages: totalImages,
-      entries: entries,
+      diseaseEntries: diseaseList,
+      pestEntries: pestList,
     );
   }
 
@@ -137,7 +155,7 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
               );
             }
 
-            if (data.entries.isEmpty) {
+            if (data.diseaseEntries.isEmpty && data.pestEntries.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(40),
@@ -178,60 +196,137 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                // ===== LIST =====
-                ...data.entries.map((e) {
-                  final percent = data.totalImages == 0
-                      ? 0
-                      : (e.value * 100 / data.totalImages);
+                if (data.diseaseEntries.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("Sin datos de enfermedades"),
+                    ),
+                  )
+                else
+                  ...data.diseaseEntries.map((e) {
+                    final percent = data.totalImages == 0
+                        ? 0
+                        : (e.value * 100 / data.totalImages);
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _glassCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.coronavirus_outlined,
-                              color: primaryGreen,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    e.key,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "${percent.toStringAsFixed(1)}% del total",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _glassCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.coronavirus_outlined,
+                                color: primaryGreen,
+                                size: 28,
                               ),
-                            ),
-                            Text(
-                              e.value.toString(),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      e.key,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${percent.toStringAsFixed(1)}% del total",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              Text(
+                                e.value.toString(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                    );
+                  }),
+
+                const SizedBox(height: 30),
+
+                const Text(
+                  "Plagas más comunes",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 14),
+
+                if (data.pestEntries.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("Sin datos de plagas"),
                     ),
-                  );
-                }),
+                  )
+                else
+                  ...data.pestEntries.map((e) {
+                    final percent = data.totalImages == 0
+                        ? 0
+                        : (e.value * 100 / data.totalImages);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _glassCard(
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.bug_report,
+                                color: Colors.orange,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      e.key,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${percent.toStringAsFixed(1)}% del total",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                e.value.toString(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
               ],
             );
           },
@@ -268,10 +363,12 @@ class _AdminDiseasesScreenState extends State<AdminDiseasesScreen> {
 
 class _DiseaseSummary {
   final int totalImages;
-  final List<MapEntry<String, int>> entries;
+  final List<MapEntry<String, int>> diseaseEntries;
+  final List<MapEntry<String, int>> pestEntries;
 
   _DiseaseSummary({
     required this.totalImages,
-    required this.entries,
+    required this.diseaseEntries,
+    required this.pestEntries,
   });
 }

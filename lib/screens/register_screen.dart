@@ -426,6 +426,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextFormField(
                           controller: nameController,
                           maxLength: 50, // Bloquea al llegar a 50
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (value) {
                             if (value == null || value.isEmpty)
                               return 'Por favor, dinos tu nombre.';
@@ -463,6 +464,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: emailController,
                           maxLength: 50, // Bloquea al llegar a 50
                           keyboardType: TextInputType.emailAddress,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (value) {
                             if (value == null || value.isEmpty)
                               return 'El correo es obligatorio.';
@@ -475,7 +477,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           decoration: InputDecoration(
                             hintText: "ejemplo@correo.com",
                             prefixIcon: Icon(Icons.email_outlined,
-                                color: Colors.grey[600]),
+                            color: Colors.grey[600]),
                             filled: true,
                             fillColor: lightGreenBg,
                             counterText: "",
@@ -498,11 +500,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: passwordController,
                           maxLength: 20, // Bloquea al llegar a 20
                           obscureText: _obscureText,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           validator: (value) {
                             if (value == null || value.isEmpty)
                               return 'Crea una contraseña segura.';
                             if (_passwordStrength == 0)
                               return 'La contraseña es muy débil. Mejórala.';
+                            if (!value.contains(RegExp(r'[A-Z]')))
+                              return 'La contraseña debe tener una letra mayúscula.';
+                            if (!value.contains(RegExp(r'[0-9]')))
+                              return 'La contraseña debe tener números.';
                             return null;
                           },
                           decoration: InputDecoration(
