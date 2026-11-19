@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:maiz_app/services/api_service.dart';
 import 'package:maiz_app/services/db_service.dart';
 import 'package:maiz_app/screens/disease_info_screen.dart';
@@ -37,7 +38,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   final ImagePicker _picker = ImagePicker();
 
   // ===========================================================
-  // MENÚ PARA TOMAR / SUBIR UNA FOTO (Lógica Intacta)
+  // MENÚ PARA TOMAR / SUBIR UNA FOTO 
   // ===========================================================
   Future<void> _mostrarOpcionesImagen() async {
     showModalBottomSheet(
@@ -106,6 +107,35 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   // ===========================================================
+  // COMPRIMIR IMAGEN ANTES DE SUBIR
+  // ===========================================================
+  Future<File> _compressImage(File file) async {
+    try {
+      final compressedXFile = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        '${file.parent.path}/temp_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        quality: 75,
+        minWidth: 800,
+        minHeight: 800,
+        format: CompressFormat.jpeg,
+      );
+      
+      if (compressedXFile != null) {
+        final compressedFile = File(compressedXFile.path);
+        // Eliminar archivo original para ahorrar espacio
+        if (compressedFile.path != file.path) {
+          await file.delete();
+        }
+        return compressedFile;
+      }
+      return file;
+    } catch (e) {
+      print('Error comprimiendo imagen: $e');
+      return file;
+    }
+  }
+
+  // ===========================================================
   // PROCESAR IMAGEN (ONLINE / OFFLINE) - (Lógica Intacta)
   // ===========================================================
   Future<void> _procesarImagen(File file) async {
@@ -116,6 +146,12 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       _isLoading = true;
     });
 
+    // Comprimir imagen antes de procesar
+    final compressedFile = await _compressImage(file);
+    setState(() {
+      _image = compressedFile;
+    });
+
     Position position = await Geolocator.getCurrentPosition();
     final createdAt = DateTime.now().toIso8601String();
     final connected = await ApiService.checkBackendHealth();
@@ -123,7 +159,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     if (connected) {
       try {
         final result = await ApiService.uploadImage(
-          file,
+          compressedFile,
           tipo: _selectedDiagnosisType,
         );
 
