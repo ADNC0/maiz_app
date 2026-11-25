@@ -186,13 +186,13 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("📌 Versión instalada: 1.0.0"),
+                  Text(" Versión instalada: 1.0.0"),
                   SizedBox(height: 6),
-                  Text("🛠 Última actualización: 2025"),
+                  Text(" Última actualización: 2025"),
                   SizedBox(height: 6),
-                  Text("📚 Módulos habilitados: Diagnósticos / Parcelas / Usuarios"),
+                  Text(" Módulos habilitados: Diagnósticos / Parcelas / Usuarios"),
                   SizedBox(height: 6),
-                  Text("🔐 Permisos: Acceso total a la plataforma"),
+                  Text(" Permisos: Acceso total a la plataforma"),
                 ],
               ),
             ),
